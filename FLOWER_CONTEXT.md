@@ -20,7 +20,7 @@
 | 인증 | JWT (Access + Refresh) / OAuth (Google, Kakao, Naver) | - |
 | 챗봇 | OpenAI API + RAG | GPT-4o |
 | 알림 | FCM | API v1 |
-| 저장소 | GitHub 제공 저장소 | 미디어 호스팅 |
+| 저장소 | OCI Object Storage | 미디어 호스팅 |
 | 배포 | Oracle Cloud (OCI) | - |
 
 

@@ -20,6 +20,15 @@
 
 ---
 
+## 외부 연동 API
+
+| 서비스 | API 이름 | 용도 | 비고 |
+| :--- | :--- | :--- | :--- |
+| **OpenAI** | GPT-4o API | 의도 분류(Intent) 및 RAG 답변 생성 | 종량제 (Groq/Ollama로 개발 단계 무료 대체 가능) |
+| **Google** | Cloud Speech-to-Text | 음성 명령을 텍스트로 변환 (STT) | 월 60분 무료 (Flutter 패키지로 무료 대체 가능) |
+
+---
+
 ## 인텐트 라우팅 테이블
 
 | intent | action.type | action.target | 실행 동작 |

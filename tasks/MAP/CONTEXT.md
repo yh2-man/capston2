@@ -16,6 +16,16 @@
 | MAP-04 | 꽃 종류별 필터 (벚꽃, 진달래 등) | P1 |
 | MAP-07 | 마커에서 길 안내 (외부 지도 앱 연동) | P1 |
 
+---
+
+## 외부 연동 API
+
+| 서비스 | API 이름 | 용도 | 비고 |
+| :--- | :--- | :--- | :--- |
+| **카카오** | Kakao Maps API (SDK) | 앱 내 지도 렌더링 및 마커 표시 | 국내 환경 최적화 및 무료 쿼터 활용 |
+| **한국관광공사** | TourAPI | 전국 꽃 명소/축제 초기 데이터 구축 | 전면 무료 |
+| **기상청** | 기상청 공공데이터 API | 지역별 실시간 개화 정보 및 날씨 조회 | 개화 예측 모델 대체용 |
+
 > MAP-05, MAP-06(알림)은 `tasks/NOTIFICATION/CONTEXT.md` 참고
 
 ---
@@ -47,7 +57,7 @@ GET /flowers/species  (🔒 인증 필요)
 
 ## 작업 체크리스트
 
-- [ ] Flutter: 지도 화면 (Google Maps 또는 Naver Map SDK)
+- [ ] Flutter: 지도 화면 (Kakao Map SDK)
 - [ ] Flutter: 꽃 마커 커스텀 아이콘
 - [ ] Flutter: 마커 클릭 → 바텀시트(꽃 상세 정보)
 - [ ] Flutter: 반경 필터 UI (슬라이더)

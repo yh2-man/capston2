@@ -1,4 +1,4 @@
-# FLOWER 개발 환경 명세서 (Development Environment Spec)
+# FLOWER 개발 환경 명세서 (Development Environment Spec) 코드 검토용
 
 > **문서 버전:** v1.1  
 > **작성일:** 2026-04-07  
@@ -40,7 +40,7 @@ API 서버는 RESTful 형식으로 통신하며, Spring Boot 프레임워크를 
 
 ### 2-1. 프론트엔드 핵심 패키지 (Pub.dev)
 - **상태 관리**: `riverpod` (앱 내 데이터 상태 구조 추적 및 관리)
-- **지도 연동**: `google_maps_flutter` (인앱 지도 및 꽃 위치 마커 렌더링)
+- **지도 연동**: `kakao_map_sdk` (인앱 지도 및 꽃 위치 마커 렌더링)
 - **네트워킹**: `dio`
 - **소셜 로그인**: 
   - `google_sign_in` (구글 Oauth 연동)
@@ -63,6 +63,6 @@ API 서버는 RESTful 형식으로 통신하며, Spring Boot 프레임워크를 
 ## 4. 기타 및 인프라 (AI / 클라우드 연동) 스펙
 
 - **푸시 모델 서버 알람**: `Firebase Cloud Messaging (FCM) API v1` (사용자 주변 꽃 감지 푸시 전송)
-- **이미지 및 문서 클라우드 저장소**: `GitHub 제공 저장소` (커뮤니티 사진 등 미디어 등록 시 사용)
+- **이미지 및 문서 클라우드 저장소**: `OCI Object Storage` (커뮤니티 사진 등 미디어 등록 시 사용)
 - **서버 인프라 구동 환경**: `Oracle Cloud (OCI)` (Spring Boot 백엔드 서버 및 DB 구동 배포처)
 - **지능형 챗봇 응답 모델**: `OpenAI API (GPT-4 / GPT-4o 등 최신버전)` + RAG 구조 혼합 사용

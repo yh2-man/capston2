@@ -21,6 +21,14 @@
 
 ---
 
+## 외부 연동 API
+
+| 서비스 | API 이름 | 용도 | 비고 |
+| :--- | :--- | :--- | :--- |
+| **Oracle** | OCI Object Storage | 유저 업로드 사진/미디어 저장 | 기존 S3/Firebase 대체 확정 스택 |
+
+---
+
 ## API 엔드포인트
 
 ### 6.1 게시글 목록 조회
@@ -101,7 +109,7 @@ Body: { reason: SPAM|INAPPROPRIATE|WRONG_INFO|OTHER, detail (선택) }
 - [ ] Flutter: 댓글 입력 + 목록
 - [ ] Flutter: 신고 다이얼로그
 - [ ] 서버: /posts/* 엔드포인트 구현
-- [ ] 서버: 이미지 업로드 → S3/Firebase Storage
+- [ ] 서버: 이미지 업로드 → OCI Object Storage
 - [ ] 서버: posts, comments 테이블 CRUD
 - [ ] 서버: 좋아요 테이블 (user_id + post_id 유니크 제약)
 - [ ] 서버: 신고 테이블 (중복 신고 방지)
