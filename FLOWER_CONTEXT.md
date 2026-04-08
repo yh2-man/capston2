@@ -13,7 +13,7 @@
 
 | 계층 | 기술 | 버전 |
 |------|------|------|
-| 앱 | Flutter / Dart | `v3.41` / `v3.11` |
+| 앱 | Flutter / Dart | `v3.41.6` / `v3.11` |
 | 서버 | Spring Boot (Java) | `v4.0.5` / Java `17` |
 | 빌드 | Gradle | `8.x` |
 | DB | PostgreSQL + PostGIS | `v18.3` + `v3.6.2` |
@@ -22,7 +22,7 @@
 | 알림 | FCM | API v1 |
 | 저장소 | GitHub 제공 저장소 | 미디어 호스팅 |
 | 배포 | Oracle Cloud (OCI) | - |
-| ML | Python (scikit-learn, XGBoost) | `3.14.3` |
+
 
 ## API 공통 규칙
 

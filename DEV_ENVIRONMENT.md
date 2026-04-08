@@ -35,8 +35,8 @@ API 서버는 RESTful 형식으로 통신하며, Spring Boot 프레임워크를 
 
 | 구분 | 기술 / 스택 명 | 버전 (Version) | 비고 |
 | :--- | :--- | :--- | :--- |
-| **프레임워크** | Flutter | `v3.41` | 2026-04 기준 최신 안정 릴리스. iOS 16+, Android 13+ 지원 |
-| **언어 (Language)** | Dart | `v3.11` | Flutter 3.41에 번들 포함 (별도 설치 불필요) |
+| **프레임워크** | Flutter | `v3.41.6` | 2026-04 기준 최신 안정 릴리스. iOS 16+, Android 13+ 지원 |
+| **언어 (Language)** | Dart | `v3.11` | Flutter 3.41.6에 번들 포함 (별도 설치 불필요) |
 
 ### 2-1. 프론트엔드 핵심 패키지 (Pub.dev)
 - **상태 관리**: `riverpod` (앱 내 데이터 상태 구조 추적 및 관리)
@@ -65,5 +65,4 @@ API 서버는 RESTful 형식으로 통신하며, Spring Boot 프레임워크를 
 - **푸시 모델 서버 알람**: `Firebase Cloud Messaging (FCM) API v1` (사용자 주변 꽃 감지 푸시 전송)
 - **이미지 및 문서 클라우드 저장소**: `GitHub 제공 저장소` (커뮤니티 사진 등 미디어 등록 시 사용)
 - **서버 인프라 구동 환경**: `Oracle Cloud (OCI)` (Spring Boot 백엔드 서버 및 DB 구동 배포처)
-- **머신러닝 예측/분석 로직 서버**: `Python 3.14.3` (2026-04 기준 최신 안정 릴리스. Scikit-learn, XGBoost 라이브러리를 활용한 모델 구성용)
 - **지능형 챗봇 응답 모델**: `OpenAI API (GPT-4 / GPT-4o 등 최신버전)` + RAG 구조 혼합 사용
