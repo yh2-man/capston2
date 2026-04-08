@@ -6,17 +6,6 @@
 
 ---
 
-## AI 행동 규칙
-- ⚠️ 표시 항목은 해당 tasks/{기능}/CONTEXT.md 확인 후 구현
-- 명세에 없는 내용은 임의 구현 금지 — 반드시 사용자에게 질문
-- 추론으로 작성한 코드는 // [추론] 주석 필수
-
-## 인증 토큰 정책 ⚠️ 상세: tasks/AUTH/CONTEXT.md
-- Access Token: 1시간
-- Refresh Token: 180일 (Sliding — 사용 시마다 연장)
-- Refresh Token Rotation 적용 (사용 시 즉시 교체)
-- 서버 DB에 Refresh Token 저장 (화이트리스트 방식)
-
 ## 기능 요약
 
 | ID | 요구사항 |
