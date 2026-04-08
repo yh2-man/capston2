@@ -329,12 +329,13 @@ Python ML 모델을 활용해 기상 데이터와 과거 개화 이력을 기반
 | 계층 | 기술 | 선택 이유 |
 |------|------|-----------|
 | 앱 (Frontend) | Flutter | iOS/Android 단일 코드베이스, 접근성 위젯 풍부 |
-| API 서버 | Spring Boot 또는 Node.js | RESTful API, JWT 인증 |
+| API 서버 | Spring Boot | RESTful API, JWT 인증, Oracle Cloud 배포 대상 |
 | 공간 DB | PostgreSQL + PostGIS | 꽃 위치 기반 거리 계산 (ST_Distance) |
 | 챗봇 | OpenAI API + RAG 아키텍처 | 한국어 자연어 이해, 꽃 DB 기반 답변 |
 | ML 예측 | Python (scikit-learn / XGBoost) | 개화 시기 예측 모델 |
 | 푸시 알림 | FCM (Firebase Cloud Messaging) | iOS/Android 통합 지원 |
-| 이미지 저장 | S3 또는 Firebase Storage | 커뮤니티 사진 업로드 |
+| 이미지 저장 | GitHub 제공 저장소 | 커뮤니티 사진 등 미디어 호스팅 |
+| 서버 호스팅 | Oracle Cloud (OCI) | API 서버 구동 및 배포 환경 |
 | 소셜 로그인 | Google OAuth 2.0 / Kakao SDK / Naver OAuth | 간편 로그인, 신규 사용자 자동 가입 |
 
 ### 6.3 데이터 모델 (핵심 테이블)
