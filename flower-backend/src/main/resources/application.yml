@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: flower-backend
+  datasource:
+    url: jdbc:postgresql://localhost:5432/flower_db
+    username: flower
+    password: flower_pwd
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.spatial.dialect.postgis.PostgisDialect
+        format_sql: true
+    show-sql: true
+    defer-datasource-initialization: true
