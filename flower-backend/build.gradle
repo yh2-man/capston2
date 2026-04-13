@@ -26,12 +26,19 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-validation-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+
+	// JWT
+	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+	// 테스트 핵심 라이브러리 (JUnit5, MockMvc, Mockito, Jackson 포함)
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	// Spring Security 테스트 지원 (WithMockUser, csrf() 등)
+	testImplementation 'org.springframework.security:spring-security-test'
 	testCompileOnly 'org.projectlombok:lombok'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	// H2 인메모리 DB (테스트 전용, 실제 PostgreSQL 없이도 통합 테스트 가능)
+	testRuntimeOnly 'com.h2database:h2'
 	testAnnotationProcessor 'org.projectlombok:lombok'
 }
 

@@ -102,10 +102,7 @@ Body: { temp_token, nickname (2~10자) }
 - [ ] Flutter: Google/Kakao/Naver SDK 연동
 - [ ] Flutter: 토큰 저장 (secure storage)
 - [ ] Flutter: 닉네임 설정 화면 (소셜 신규 회원용)
-- [x] 서버: /auth/* 엔드포인트 구현 (signup, login, refresh, nickname, logout)
-- [x] 서버: JWT 발급/검증 미들웨어 (JwtProvider.java — Access/Refresh/Temp Token)
-- [x] 서버: JWT 인증 필터 (JwtAuthenticationFilter.java — 모든 보호 API에 자동 적용)
-- [ ] 서버: OAuth provider별 토큰 교환 로직 (Google/Kakao/Naver API 키 발급 후 진행)
-- [x] 서버: users 테이블 (provider, provider_id, password, fcm_token, role 컬럼 포함)
-- [x] 서버: Spring Security 설정 (SecurityConfig.java — BCrypt, Stateless 세션)
-- [x] 서버: 단위/통합 테스트 작성 (JwtProviderTest, AuthServiceTest, AuthControllerTest — 20개 전체 통과)
+- [ ] 서버: /auth/* 엔드포인트 구현
+- [ ] 서버: JWT 발급/검증 미들웨어
+- [ ] 서버: OAuth provider별 토큰 교환 로직
+- [ ] 서버: users 테이블 (provider, provider_id 컬럼 포함)

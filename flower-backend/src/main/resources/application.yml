@@ -1,6 +1,8 @@
 spring:
   application:
     name: flower-backend
+  profiles:
+    include: auth  # application-auth.yml 자동으로 읽어옴
   datasource:
     url: jdbc:postgresql://localhost:5432/flower_db
     username: flower
@@ -11,7 +13,8 @@ spring:
       ddl-auto: update
     properties:
       hibernate:
-        dialect: org.hibernate.spatial.dialect.postgis.PostgisDialect
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
     show-sql: true
     defer-datasource-initialization: true
+    open-in-view: false
