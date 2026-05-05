@@ -4,16 +4,18 @@ spring:
   profiles:
     include: auth  # application-auth.yml 자동으로 읽어옴
   datasource:
-    url: jdbc:postgresql://localhost:5432/flower_db
-    username: flower
-    password: flower_pwd
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  h2:
+    console:
+      enabled: true    # http://localhost:8080/h2-console 에서 DB 확인 가능
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop  # 앱 시작 시 테이블 자동 생성, 종료 시 삭제
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
     show-sql: true
     defer-datasource-initialization: true

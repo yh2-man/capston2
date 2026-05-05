@@ -19,23 +19,20 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private String email;
-
-    // 일반(LOCAL) 로그인 전용. 소셜 로그인 유저는 null
-    @Column
-    private String password;
-
     @Column(nullable = false, length = 10)
     private String nickname;
+
+    // Oracle Cloud Storage에 저장된 프로필 이미지 URL
+    @Column(length = 1024)
+    private String profileImageUrl;
 
     // 로그인 방식 구별 (LOCAL, GOOGLE, KAKAO, NAVER)
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Provider provider;
 
-    // 소셜 로그인 전용. 각 소셜 서비스가 부여한 고유 ID
-    @Column
+    // 소셜 서비스가 부여한 고유 ID (provider + providerId로 유저 식별)
+    @Column(nullable = false)
     private String providerId;
 
     // FCM 푸시 알림용 기기 토큰
@@ -50,23 +47,11 @@ public class User {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    // ─── 일반(LOCAL) 회원가입용 정적 팩토리 메서드 ───────────────────────
-    public static User createLocalUser(String email, String encodedPassword, String nickname) {
-        User user = new User();
-        user.email = email;
-        user.password = encodedPassword;
-        user.nickname = nickname;
-        user.provider = Provider.LOCAL;
-        user.role = Role.USER;
-        return user;
-    }
-
     // ─── 소셜(OAUTH) 회원가입용 정적 팩토리 메서드 ──────────────────────
-    public static User createOAuthUser(String email, String nickname, Provider provider, String providerId) {
+    public static User createOAuthUser(String nickname, String profileImageUrl, Provider provider, String providerId) {
         User user = new User();
-        user.email = email;
-        user.password = null; // 소셜 유저는 비밀번호 없음
         user.nickname = nickname;
+        user.profileImageUrl = profileImageUrl;
         user.provider = provider;
         user.providerId = providerId;
         user.role = Role.USER;
@@ -83,7 +68,6 @@ public class User {
 
     // ─── 로그인 방식 구별용 Enum ──────────────────────────────────────────
     public enum Provider {
-        LOCAL,   // 우리 서버에 이메일+비밀번호 저장
         GOOGLE,
         KAKAO,
         NAVER

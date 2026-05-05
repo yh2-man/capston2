@@ -12,6 +12,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -36,30 +41,38 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // REST API이므로 CSRF, 세션, 폼 로그인, HTTP Basic, 기본 로그아웃 필터 모두 비활성화
-            // 기본 LogoutFilter를 끄지 않으면 /auth/logout 요청 시 SecurityContext를 먼저 클리어해버림
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
             .formLogin(AbstractHttpConfigurer::disable)
             .httpBasic(AbstractHttpConfigurer::disable)
             .logout(AbstractHttpConfigurer::disable)
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            // 인증 없이 접근 가능한 엔드포인트 설정
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                    "/api/v1/auth/signup",
-                    "/api/v1/auth/login",
                     "/api/v1/auth/refresh",
                     "/api/v1/auth/oauth/**",
-                    "/api/v1/auth/nickname",
-                    "/error"   // 내부 에러 경로 허용 (에러 메시지가 403으로 가려지지 않도록)
+                    "/api/v1/auth/profile-setup",
+                    "/error"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
-            // JWT 필터를 Spring Security 기본 필터 앞에 추가
-            // 요청이 들어오면 JWT 검증 → 인증 성공 시 SecurityContext 등록 → 다음 필터로
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    // CORS 설정: Flutter 웹 앱에서 API 호출 허용
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("http://localhost:5000"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 }

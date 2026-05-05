@@ -50,10 +50,10 @@ public class JwtProvider {
                 .compact();
     }
 
-    // 소셜 신규 유저 임시 토큰 발급 (닉네임 설정용, 유효시간 10분)
-    public String generateTempToken(String providerEmail, String provider) {
+    // 소셜 신규 유저 임시 토큰 발급 (프로필 설정용, 유효시간 10분)
+    public String generateTempToken(String provider, String providerId) {
         return Jwts.builder()
-                .setSubject(providerEmail)
+                .setSubject(providerId)
                 .claim("type", "temp")
                 .claim("provider", provider)
                 .setIssuedAt(new Date())
@@ -67,8 +67,8 @@ public class JwtProvider {
         return Long.parseLong(getClaims(token).getSubject());
     }
 
-    // 토큰에서 이메일 추출 (임시 토큰 전용)
-    public String getEmail(String token) {
+    // 토큰에서 providerId 추출 (임시 토큰 전용)
+    public String getProviderId(String token) {
         return getClaims(token).getSubject();
     }
 

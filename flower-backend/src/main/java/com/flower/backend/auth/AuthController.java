@@ -18,20 +18,7 @@ public class AuthController {
     private final AuthService authService;
     private final OAuthService oAuthService;
 
-    // POST /api/v1/auth/signup — 일반 회원가입
-    @PostMapping("/signup")
-    public ResponseEntity<?> signup(@Valid @RequestBody SignupRequest request) {
-        LoginResponse response = authService.signup(request);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(success(response));
-    }
-
-    // POST /api/v1/auth/login — 일반(LOCAL) 로그인
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
-        LoginResponse response = authService.login(request);
-        return ResponseEntity.ok(success(response));
-    }
+    // 일반 회원가입/로그인 엔드포인트 제거됨 (소셜 전용)
 
     // POST /api/v1/auth/refresh — Access Token 재발급
     @PostMapping("/refresh")
@@ -40,10 +27,10 @@ public class AuthController {
         return ResponseEntity.ok(success(response));
     }
 
-    // POST /api/v1/auth/nickname — 소셜 신규 유저 닉네임 설정
-    @PostMapping("/nickname")
-    public ResponseEntity<?> setNickname(@Valid @RequestBody NicknameRequest request) {
-        LoginResponse response = authService.setNickname(request);
+    // POST /api/v1/auth/profile-setup — 소셜 신규 유저 프로필 설정
+    @PostMapping("/profile-setup")
+    public ResponseEntity<?> setupProfile(@Valid @RequestBody ProfileSetupRequest request) {
+        LoginResponse response = authService.setupProfile(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(success(response));
     }
@@ -62,6 +49,13 @@ public class AuthController {
         return ResponseEntity.ok(success(response));
     }
 
+    // POST /api/v1/auth/oauth/kakao — 카카오 소셜 로그인
+    @PostMapping("/oauth/kakao")
+    public ResponseEntity<?> oauthKakao(@Valid @RequestBody AuthDto.OAuthRequest request) {
+        Object response = oAuthService.processKakao(request.getAuthCode(), request.getRedirectUri());
+        return ResponseEntity.ok(success(response));
+    }
+
     // POST /api/v1/auth/logout — 로그아웃 (토큰 필수)
     @PostMapping("/logout")
     public ResponseEntity<?> logout() {
@@ -77,7 +71,7 @@ public class AuthController {
     @ExceptionHandler(AuthException.class)
     public ResponseEntity<?> handleAuthException(AuthException e) {
         int statusCode = switch (e.getErrorCode()) {
-            case "EMAIL_ALREADY_EXISTS", "NICKNAME_ALREADY_EXISTS" -> 409;
+            case "NICKNAME_ALREADY_EXISTS" -> 409;
             case "INVALID_CREDENTIALS", "INVALID_REFRESH_TOKEN", "TEMP_TOKEN_EXPIRED" -> 401;
             default -> 400;
         };

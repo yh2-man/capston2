@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 
 /**
  * application-auth.yml의 oauth.* 설정값을 자바 객체로 바인딩.
- * 카카오는 현재 미사용(주석 처리).
  */
 @Getter
 @Setter
@@ -17,11 +16,19 @@ import org.springframework.stereotype.Component;
 public class OAuthProperties {
 
     private Google google = new Google();
+    private Kakao kakao = new Kakao();
     private Naver naver = new Naver();
 
     @Getter
     @Setter
     public static class Google {
+        private String clientId;
+        private String clientSecret;
+    }
+
+    @Getter
+    @Setter
+    public static class Kakao {
         private String clientId;
         private String clientSecret;
     }

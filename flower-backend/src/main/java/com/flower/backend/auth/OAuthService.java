@@ -12,7 +12,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * 구글/네이버 OAuth 서버와의 실제 HTTP 통신을 담당하는 서비스.
+ * 구글/카카오/네이버 OAuth 서버와의 실제 HTTP 통신을 담당하는 서비스.
  *
  * 흐름:
  * 1. Flutter 앱 → (auth_code + redirect_uri) → 우리 서버
@@ -44,11 +44,10 @@ public class OAuthService {
         // 2단계: Google Access Token → 유저 정보 조회
         GoogleUserInfo userInfo = getGoogleUserInfo(googleAccessToken);
 
-        log.info("[OAuth] 구글 로그인 시도 - email: {}", userInfo.getEmail());
+        log.info("[OAuth] 구글 로그인 시도 - providerId: {}", userInfo.getId());
 
-        // 3단계: 기존 회원이면 로그인, 신규면 닉네임 설정 화면으로 안내
+        // 3단계: 기존 회원이면 로그인, 신규면 프로필 설정 화면으로 안내
         return authService.processOAuth(
-            userInfo.getEmail(),
             userInfo.getName(),
             User.Provider.GOOGLE,
             userInfo.getId()
@@ -103,11 +102,10 @@ public class OAuthService {
         // 2단계: Naver Access Token → 유저 정보 조회
         NaverUserInfo userInfo = getNaverUserInfo(naverAccessToken);
 
-        log.info("[OAuth] 네이버 로그인 시도 - email: {}", userInfo.getEmail());
+        log.info("[OAuth] 네이버 로그인 시도 - providerId: {}", userInfo.getId());
 
-        // 3단계: 기존 회원이면 로그인, 신규면 닉네임 설정 화면으로 안내
+        // 3단계: 기존 회원이면 로그인, 신규면 프로필 설정 화면으로 안내
         return authService.processOAuth(
-            userInfo.getEmail(),
             userInfo.getNickname(),
             User.Provider.NAVER,
             userInfo.getId()
@@ -153,6 +151,68 @@ public class OAuthService {
         return response.getBody().getResponse();
     }
 
+    // ─── 카카오 OAuth 처리 ───────────────────────────────────────────────
+
+    public Object processKakao(String authCode, String redirectUri) {
+        String kakaoAccessToken = getKakaoAccessToken(authCode, redirectUri);
+        KakaoUserInfo userInfo = getKakaoUserInfo(kakaoAccessToken);
+
+        log.info("[OAuth] 카카오 로그인 시도 - providerId: {}", userInfo.getId());
+
+        String nickname = (userInfo.getProperties() != null) ? userInfo.getProperties().getNickname() : "사용자";
+        return authService.processOAuth(
+            nickname,
+            User.Provider.KAKAO,
+            String.valueOf(userInfo.getId())
+        );
+    }
+
+    private String getKakaoAccessToken(String authCode, String redirectUri) {
+        String tokenUrl = "https://kauth.kakao.com/oauth/token";
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("grant_type", "authorization_code");
+        params.add("client_id", oAuthProperties.getKakao().getClientId());
+        params.add("client_secret", oAuthProperties.getKakao().getClientSecret());
+        params.add("redirect_uri", redirectUri);
+        params.add("code", authCode);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        try {
+            ResponseEntity<KakaoTokenResponse> response = restTemplate.postForEntity(
+                tokenUrl, new HttpEntity<>(params, headers), KakaoTokenResponse.class
+            );
+
+            if (response.getBody() == null || response.getBody().getAccessToken() == null) {
+                throw new AuthException("INVALID_OAUTH_CODE", "카카오 토큰 발급에 실패했습니다.");
+            }
+            return response.getBody().getAccessToken();
+        } catch (AuthException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("[OAuth] 카카오 토큰 교환 실패 - redirectUri: {}, error: {}", redirectUri, e.getMessage());
+            throw new AuthException("INVALID_OAUTH_CODE", "카카오 인증 실패: " + e.getMessage());
+        }
+    }
+
+    private KakaoUserInfo getKakaoUserInfo(String accessToken) {
+        String userInfoUrl = "https://kapi.kakao.com/v2/user/me";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+
+        ResponseEntity<KakaoUserInfo> response = restTemplate.exchange(
+            userInfoUrl, HttpMethod.GET, new HttpEntity<>(headers), KakaoUserInfo.class
+        );
+
+        if (response.getBody() == null) {
+            throw new AuthException("OAUTH_UPSTREAM_ERROR", "카카오 유저 정보 조회에 실패했습니다.");
+        }
+        return response.getBody();
+    }
+
     // ─── 내부 응답 매핑용 DTO ────────────────────────────────────────────
 
     @Getter
@@ -183,6 +243,23 @@ public class OAuthService {
     private static class NaverUserInfo {
         private String id;
         private String email;
+        private String nickname;
+    }
+
+    @Getter
+    private static class KakaoTokenResponse {
+        @JsonProperty("access_token")
+        private String accessToken;
+    }
+
+    @Getter
+    private static class KakaoUserInfo {
+        private Long id;
+        private KakaoProperties properties;
+    }
+
+    @Getter
+    private static class KakaoProperties {
         private String nickname;
     }
 }

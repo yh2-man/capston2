@@ -7,33 +7,7 @@ import lombok.Builder;
 
 public class AuthDto {
 
-    // ─── 일반 회원가입 요청 ───────────────────────────────────────────────
-    @Getter
-    public static class SignupRequest {
-        @Email
-        @NotBlank
-        private String email;
-
-        @NotBlank
-        @Size(min = 8, message = "비밀번호는 8자 이상이어야 합니다.")
-        @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).+$", message = "영문+숫자 조합이어야 합니다.")
-        private String password;
-
-        @NotBlank
-        @Size(min = 2, max = 10, message = "닉네임은 2~10자이어야 합니다.")
-        private String nickname;
-    }
-
-    // ─── 일반 로그인 요청 ───────────────────────────────────────────────
-    @Getter
-    public static class LoginRequest {
-        @Email
-        @NotBlank
-        private String email;
-
-        @NotBlank
-        private String password;
-    }
+    // 일반 회원가입/로그인 제거됨 (소셜 전용)
 
     // ─── 소셜(OAuth) 로그인 요청 ─────────────────────────────────────────
     @Getter
@@ -44,15 +18,17 @@ public class AuthDto {
         private String redirectUri;   // 앱에서 사용한 리다이렉트 주소
     }
 
-    // ─── 소셜 신규 가입 시 닉네임 설정 요청 ──────────────────────────────
+    // ─── 소셜 신규 가입 시 프로필 설정 요청 ──────────────────────────────
     @Getter
-    public static class NicknameRequest {
+    public static class ProfileSetupRequest {
         @NotBlank
-        private String tempToken;     // 임시 발급된 토큰
+        private String tempToken;
 
         @NotBlank
         @Size(min = 2, max = 10)
         private String nickname;
+
+        private String profileImageUrl; // Oracle Cloud Storage URL (선택)
     }
 
     // ─── 로그인 성공 응답 (기존 유저) ────────────────────────────────────
@@ -65,14 +41,13 @@ public class AuthDto {
         private UserInfo user;
     }
 
-    // ─── 소셜 신규 유저 응답 (닉네임 설정 필요) ──────────────────────────
+    // ─── 소셜 신규 유저 응답 (프로필 설정 필요) ──────────────────────────
     @Getter
     @Builder
     public static class OAuthNewUserResponse {
-        private boolean isNewUser;    // true → 닉네임 설정 화면으로 이동
+        private boolean isNewUser;    // true → 프로필 설정 화면으로 이동
         private String tempToken;
         private String provider;
-        private String providerEmail;
     }
 
     // ─── 토큰 갱신 요청 ──────────────────────────────────────────────────
@@ -96,5 +71,6 @@ public class AuthDto {
     public static class UserInfo {
         private Long userId;
         private String nickname;
+        private String profileImageUrl;
     }
 }
