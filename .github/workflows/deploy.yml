@@ -53,12 +53,6 @@ jobs:
           username: ${{ secrets.ORACLE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cat > ~/app/app.env << 'EOF'
-            SPRING_PROFILES_ACTIVE=prod
-            KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}
-            KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            EOF
+            printf 'SPRING_PROFILES_ACTIVE=prod\nKAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}\nKAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}\nJWT_SECRET=${{ secrets.JWT_SECRET }}\nDB_URL=jdbc:postgresql://db.eycyfnteenxtrumzfyya.supabase.co:5432/postgres?sslmode=require\nDB_USERNAME=postgres\nDB_PASSWORD=${{ secrets.DB_PASSWORD }}\n' > ~/app/app.env
             sudo systemctl restart ourt-backend
             echo "서버 시작 완료"
