@@ -2,7 +2,7 @@ spring:
   application:
     name: flower-backend
   profiles:
-    include: auth  # application-auth.yml ?ë™?¼ë¡œ ?½ì–´??
+    include: auth
   datasource:
     url: jdbc:h2:mem:testdb
     username: sa
@@ -10,16 +10,13 @@ spring:
     driver-class-name: org.h2.Driver
   h2:
     console:
-      enabled: true    # http://localhost:8080/h2-console ?ì„œ DB ?•ì¸ ê°€??
+      enabled: true
   jpa:
     hibernate:
-      ddl-auto: create-drop  # ???œì‘ ???Œì´ë¸??ë™ ?ì„±, ì¢…ë£Œ ???? œ
+      ddl-auto: create-drop
     properties:
       hibernate:
         format_sql: true
     show-sql: true
     defer-datasource-initialization: true
     open-in-view: false
-
-
-
