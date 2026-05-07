@@ -53,16 +53,12 @@ jobs:
           username: ${{ secrets.ORACLE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            export SPRING_PROFILES_ACTIVE=prod
-            export KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}
-            export KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}
-            export JWT_SECRET=${{ secrets.JWT_SECRET }}
-            export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            nohup java -jar ~/app/*.jar \
-              --spring.profiles.active=prod \
-              --KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }} \
-              --KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }} \
-              --JWT_SECRET=${{ secrets.JWT_SECRET }} \
-              --DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
-              > ~/app/app.log 2>&1 &
+            cat > ~/app/app.env << 'EOF'
+            SPRING_PROFILES_ACTIVE=prod
+            KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}
+            KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            EOF
+            sudo systemctl restart ourt-backend
             echo "서버 시작 완료"
