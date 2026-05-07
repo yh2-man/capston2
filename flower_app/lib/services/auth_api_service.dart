@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 /// 백엔드 API와 OAuth 흐름을 관리하는 서비스.
 class AuthApiService {
   // 로컬 테스트 시 백엔드 주소
-  static const String baseUrl = 'http://localhost:8080/api/v1/auth';
+  static const String baseUrl = 'http://217.142.229.129:8080/api/v1/auth';
 
   // 모바일 OAuth 콜백 딥링크 스킴
   static const String callbackUrlScheme = 'ourt';
