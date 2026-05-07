@@ -9,7 +9,7 @@ class AuthApiService {
 
   // 모바일 OAuth 콜백 딥링크 스킴
   static const String callbackUrlScheme = 'ourt';
-  static const String callbackUrl = 'ourt://oauth';
+  static const String callbackUrl = 'http://217.142.229.129:8080/oauth/callback';
 
   // ─── 카카오 인증 URL 생성 ───────────────────────────────────
 
