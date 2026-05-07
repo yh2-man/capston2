@@ -39,9 +39,6 @@ class AppColors {
 
   static const kakaoYellow  = Color(0xFFFEE500); // 카카오 버튼
   static const kakaoText    = Color(0xFF3C1E1E);
-  static const googleText   = Color(0xFF333333);
-  static const googleBorder = Color(0xFFDDDDDD);
-  static const googleIcon   = Color(0xFF4285F4);
 
   static const mapBg        = Color(0xFFE8F4E8); // 지도 배경
 }

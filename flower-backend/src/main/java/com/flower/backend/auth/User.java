@@ -26,7 +26,6 @@ public class User {
     @Column(length = 1024)
     private String profileImageUrl;
 
-    // 로그인 방식 구별 (LOCAL, GOOGLE, KAKAO, NAVER)
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Provider provider;
@@ -66,11 +65,8 @@ public class User {
         this.fcmToken = fcmToken;
     }
 
-    // ─── 로그인 방식 구별용 Enum ──────────────────────────────────────────
     public enum Provider {
-        GOOGLE,
-        KAKAO,
-        NAVER
+        KAKAO
     }
 
     public enum Role {

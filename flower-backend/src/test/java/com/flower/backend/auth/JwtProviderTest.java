@@ -40,13 +40,13 @@ class JwtProviderTest {
     }
 
     @Test
-    @DisplayName("소셜 신규 유저 Temp Token 발급 → 이메일/provider 추출 성공")
+    @DisplayName("소셜 신규 유저 Temp Token 발급 → provider/providerId 추출 성공")
     void generateAndParseTempToken() {
-        String token = jwtProvider.generateTempToken("user@google.com", "GOOGLE");
+        String token = jwtProvider.generateTempToken("KAKAO", "kakao-provider-id-123");
 
         assertThat(jwtProvider.validateToken(token)).isTrue();
-        assertThat(jwtProvider.getEmail(token)).isEqualTo("user@google.com");
-        assertThat(jwtProvider.getProvider(token)).isEqualTo("GOOGLE");
+        assertThat(jwtProvider.getProvider(token)).isEqualTo("KAKAO");
+        assertThat(jwtProvider.getProviderId(token)).isEqualTo("kakao-provider-id-123");
     }
 
     @Test

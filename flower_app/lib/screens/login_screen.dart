@@ -1,16 +1,80 @@
 import 'package:flutter/material.dart';
-import 'dart:html' as html;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/season_theme.dart';
 import '../services/auth_api_service.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
-  // OAuth 인증 페이지로 리다이렉트
-  void _loginWith(String provider, String authUrl) {
-    // 어떤 소셜 서비스로 로그인 시도했는지 저장 (콜백에서 사용)
-    html.window.localStorage['oauth_provider'] = provider;
-    html.window.location.href = authUrl;
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  Future<void> _loginWithKakao() async {
+    final clientId = dotenv.env['KAKAO_REST_API_KEY'] ?? '';
+    if (clientId.isEmpty) {
+      setState(() => _errorMessage = 'KAKAO_REST_API_KEY가 설정되지 않았습니다.');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // 시스템 브라우저에서 카카오 로그인 → 콜백 딥링크 수신
+      final result = await FlutterWebAuth2.authenticate(
+        url: AuthApiService.getKakaoAuthUrl(clientId),
+        callbackUrlScheme: AuthApiService.callbackUrlScheme,
+      );
+
+      final code = Uri.parse(result).queryParameters['code'];
+      if (code == null) {
+        setState(() => _errorMessage = '인증 코드를 받지 못했습니다.');
+        return;
+      }
+
+      // 백엔드에 code 전송
+      final response = await AuthApiService.sendAuthCode(
+        provider: 'kakao',
+        authCode: code,
+      );
+
+      if (!mounted) return;
+
+      if (response['success'] == true) {
+        final data = response['data'];
+        final prefs = await SharedPreferences.getInstance();
+
+        if (data['isNewUser'] == true) {
+          await prefs.setString('tempToken', data['tempToken'] ?? '');
+          Navigator.pushReplacementNamed(context, '/profile-setup');
+        } else {
+          await prefs.setString('accessToken', data['accessToken'] ?? '');
+          await prefs.setString('refreshToken', data['refreshToken'] ?? '');
+          Navigator.pushReplacementNamed(context, '/main');
+        }
+      } else {
+        final errorField = response['error'];
+        final msg = errorField is Map
+            ? errorField['message']?.toString() ?? '로그인에 실패했습니다.'
+            : response['message']?.toString() ?? '로그인에 실패했습니다.';
+        setState(() => _errorMessage = msg);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _errorMessage = '로그인 중 오류가 발생했습니다.');
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -32,17 +96,18 @@ class LoginScreen extends StatelessWidget {
               const Spacer(flex: 2),
 
               // ── 카카오 로그인 버튼 ──
-              _buildKakaoButton(context),
+              _buildKakaoButton(),
 
-              const SizedBox(height: 12),
-
-              // ── 구글 로그인 버튼 ──
-              _buildGoogleButton(context),
-
-              const SizedBox(height: 12),
-
-              // ── 네이버 로그인 버튼 ──
-              _buildNaverButton(context),
+              // ── 에러 메시지 ──
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red, fontSize: 13),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
 
               const Spacer(flex: 2),
 
@@ -61,7 +126,6 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
-  // ── 로고 위젯 ──
   Widget _buildLogo(SeasonColors colors) {
     return Column(
       children: [
@@ -100,102 +164,21 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
-  // ── 카카오 버튼 ──
-  Widget _buildKakaoButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 54,
-      child: ElevatedButton.icon(
-        onPressed: () {
-          // TODO: application-auth.yml의 kakao client-id를 여기에 입력
-          const clientId = 'YOUR_KAKAO_REST_API_KEY';
-          _loginWith('kakao', AuthApiService.getKakaoAuthUrl(clientId));
-        },
-        icon: const Icon(Icons.chat_bubble, color: Color(0xFF3C1E1E)),
-        label: const Text(
-          '카카오로 시작하기',
-          style: TextStyle(
-            color: Color(0xFF3C1E1E),
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFFEE500),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          elevation: 0,
-        ),
-      ),
-    );
-  }
+  // ── 카카오 버튼 (공식 제공 이미지 사용) ──
+  Widget _buildKakaoButton() {
+    if (_isLoading) {
+      return const SizedBox(
+        height: 52,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
 
-  // ── 구글 버튼 ──
-  Widget _buildGoogleButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 54,
-      child: OutlinedButton.icon(
-        onPressed: () {
-          // TODO: Google Cloud Console의 client-id를 여기에 입력
-          const clientId = 'YOUR_GOOGLE_CLIENT_ID';
-          _loginWith('google', AuthApiService.getGoogleAuthUrl(clientId));
-        },
-        icon: const Icon(Icons.g_mobiledata, size: 28, color: Color(0xFF4285F4)),
-        label: const Text(
-          'Google로 시작하기',
-          style: TextStyle(
-            color: Color(0xFF333333),
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Color(0xFFDDDDDD)),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          backgroundColor: Colors.white,
-        ),
-      ),
-    );
-  }
-
-  // ── 네이버 버튼 ──
-  Widget _buildNaverButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 54,
-      child: ElevatedButton.icon(
-        onPressed: () {
-          // TODO: Naver Developers의 client-id를 여기에 입력
-          const clientId = 'YOUR_NAVER_CLIENT_ID';
-          _loginWith('naver', AuthApiService.getNaverAuthUrl(clientId));
-        },
-        icon: const Text(
-          'N',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        label: const Text(
-          '네이버로 시작하기',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF03C75A),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          elevation: 0,
-        ),
+    return GestureDetector(
+      onTap: _loginWithKakao,
+      child: Image.asset(
+        'assets/images/kakao_login_medium_narrow.png',
+        width: double.infinity,
+        fit: BoxFit.fitWidth,
       ),
     );
   }

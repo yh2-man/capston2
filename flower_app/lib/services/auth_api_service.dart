@@ -7,38 +7,23 @@ class AuthApiService {
   // 로컬 테스트 시 백엔드 주소
   static const String baseUrl = 'http://localhost:8080/api/v1/auth';
 
-  // Flutter 웹 앱의 OAuth 콜백 URL (포트 5000 고정)
-  static const String webCallbackUrl = 'http://localhost:5000/oauth-callback';
+  // 모바일 OAuth 콜백 딥링크 스킴
+  static const String callbackUrlScheme = 'ourt';
+  static const String callbackUrl = 'ourt://oauth';
 
-  // ─── 각 소셜 서비스 인증 URL 생성 ──────────────────────────
-
-  static String getGoogleAuthUrl(String clientId) {
-    return 'https://accounts.google.com/o/oauth2/v2/auth'
-        '?client_id=$clientId'
-        '&redirect_uri=${Uri.encodeComponent(webCallbackUrl)}'
-        '&response_type=code'
-        '&scope=openid%20profile';
-  }
+  // ─── 카카오 인증 URL 생성 ───────────────────────────────────
 
   static String getKakaoAuthUrl(String clientId) {
     return 'https://kauth.kakao.com/oauth/authorize'
         '?client_id=$clientId'
-        '&redirect_uri=${Uri.encodeComponent(webCallbackUrl)}'
+        '&redirect_uri=${Uri.encodeComponent(callbackUrl)}'
         '&response_type=code';
-  }
-
-  static String getNaverAuthUrl(String clientId) {
-    return 'https://nid.naver.com/oauth2.0/authorize'
-        '?client_id=$clientId'
-        '&redirect_uri=${Uri.encodeComponent(webCallbackUrl)}'
-        '&response_type=code'
-        '&state=naver_login';
   }
 
   // ─── auth_code를 백엔드에 전송 ─────────────────────────────
 
   static Future<Map<String, dynamic>> sendAuthCode({
-    required String provider, // google, kakao, naver
+    required String provider,
     required String authCode,
   }) async {
     final url = '$baseUrl/oauth/$provider';
@@ -47,7 +32,7 @@ class AuthApiService {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'authCode': authCode,
-        'redirectUri': webCallbackUrl,
+        'redirectUri': callbackUrl,
       }),
     );
 

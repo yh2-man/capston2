@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'dart:html' as html;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/season_theme.dart';
 import '../services/auth_api_service.dart';
 
-/// 소셜 로그인으로 최초 가입 시 나타나는 프로필 설정 화면.
-/// 닉네임(필수)과 프로필 사진(선택)을 설정한 뒤 가입을 완료합니다.
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
 
@@ -24,16 +22,13 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     super.dispose();
   }
 
-  // 프로필 이미지 선택
   Future<void> _pickProfileImage() async {
     // TODO: image_picker 패키지로 이미지 선택 후 Oracle Cloud Storage에 업로드
-    // 업로드 완료 후 URL을 _profileImageUrl에 저장
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('이미지 업로드 기능은 추후 구현 예정입니다.')),
     );
   }
 
-  // 가입 완료 (백엔드 API 호출)
   Future<void> _submitProfile() async {
     final nickname = _nicknameController.text.trim();
 
@@ -48,8 +43,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     });
 
     try {
-      // localStorage에서 tempToken 가져오기
-      final tempToken = html.window.localStorage['tempToken'] ?? '';
+      final prefs = await SharedPreferences.getInstance();
+      final tempToken = prefs.getString('tempToken') ?? '';
 
       if (tempToken.isEmpty) {
         setState(() {
@@ -59,7 +54,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         return;
       }
 
-      // 백엔드 API 호출
       final result = await AuthApiService.setupProfile(
         tempToken: tempToken,
         nickname: nickname,
@@ -70,12 +64,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
       if (result['success'] == true) {
         final data = result['data'];
-        // 토큰 저장
-        html.window.localStorage['accessToken'] = data['accessToken'] ?? '';
-        html.window.localStorage['refreshToken'] = data['refreshToken'] ?? '';
-        // tempToken 정리
-        html.window.localStorage.remove('tempToken');
-        // 메인 화면으로
+        await prefs.setString('accessToken', data['accessToken'] ?? '');
+        await prefs.setString('refreshToken', data['refreshToken'] ?? '');
+        await prefs.remove('tempToken');
         Navigator.pushReplacementNamed(context, '/main');
       } else {
         final errorMsg = result['error']?['message'] ?? '가입에 실패했습니다.';
@@ -103,7 +94,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             children: [
               const Spacer(flex: 2),
 
-              // ── 안내 문구 ──
               Text(
                 '프로필을 설정해 주세요',
                 style: TextStyle(
@@ -120,7 +110,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
               const SizedBox(height: 40),
 
-              // ── 프로필 이미지 선택 ──
               GestureDetector(
                 onTap: _pickProfileImage,
                 child: Stack(
@@ -163,7 +152,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
               const SizedBox(height: 32),
 
-              // ── 닉네임 입력 ──
               TextField(
                 controller: _nicknameController,
                 maxLength: 10,
@@ -190,7 +178,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 ),
               ),
 
-              // ── 에러 메시지 ──
               if (_errorMessage != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
@@ -203,7 +190,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
               const Spacer(flex: 2),
 
-              // ── 가입 완료 버튼 ──
               SizedBox(
                 width: double.infinity,
                 height: 54,

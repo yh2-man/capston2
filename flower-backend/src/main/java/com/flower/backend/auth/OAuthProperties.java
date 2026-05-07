@@ -15,27 +15,11 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "oauth")
 public class OAuthProperties {
 
-    private Google google = new Google();
     private Kakao kakao = new Kakao();
-    private Naver naver = new Naver();
-
-    @Getter
-    @Setter
-    public static class Google {
-        private String clientId;
-        private String clientSecret;
-    }
 
     @Getter
     @Setter
     public static class Kakao {
-        private String clientId;
-        private String clientSecret;
-    }
-
-    @Getter
-    @Setter
-    public static class Naver {
         private String clientId;
         private String clientSecret;
     }
