@@ -55,10 +55,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (data['isNewUser'] == true) {
           await prefs.setString('tempToken', data['tempToken'] ?? '');
+          if (!mounted) return;
           Navigator.pushReplacementNamed(context, '/profile-setup');
         } else {
           await prefs.setString('accessToken', data['accessToken'] ?? '');
           await prefs.setString('refreshToken', data['refreshToken'] ?? '');
+          if (!mounted) return;
           Navigator.pushReplacementNamed(context, '/main');
         }
       } else {

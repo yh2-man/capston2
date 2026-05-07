@@ -1,21 +1,24 @@
 package com.flower.backend.auth;
 
-import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
-
 @RestController
 public class OAuthCallbackController {
 
-    // 카카오가 리다이렉트하는 엔드포인트
-    // code를 받아서 앱 딥링크(ourt://oauth?code=...)로 전달
-    @GetMapping("/oauth/callback")
-    public void kakaoCallback(
-            @RequestParam String code,
-            HttpServletResponse response) throws IOException {
-        response.sendRedirect("ourt://oauth?code=" + code);
+    @GetMapping(value = "/oauth/callback", produces = "text/html")
+    public ResponseEntity<String> kakaoCallback(@RequestParam String code) {
+        String deepLink = "ourt://oauth?code=" + code;
+        String html = "<!DOCTYPE html><html><head>"
+            + "<meta http-equiv='refresh' content='0;url=" + deepLink + "'>"
+            + "</head><body>"
+            + "<script>window.location.href='" + deepLink + "';</script>"
+            + "<p>앱으로 이동 중...</p>"
+            + "</body></html>";
+        return ResponseEntity.ok()
+            .header("ngrok-skip-browser-warning", "true")
+            .body(html);
     }
 }
