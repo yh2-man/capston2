@@ -2,7 +2,7 @@ spring:
   application:
     name: flower-backend
   profiles:
-    include: auth  # application-auth.yml 자동으로 읽어옴
+    include: auth  # application-auth.yml ?�동?�로 ?�어??
   datasource:
     url: jdbc:h2:mem:testdb
     username: sa
@@ -10,13 +10,14 @@ spring:
     driver-class-name: org.h2.Driver
   h2:
     console:
-      enabled: true    # http://localhost:8080/h2-console 에서 DB 확인 가능
+      enabled: true    # http://localhost:8080/h2-console ?�서 DB ?�인 가??
   jpa:
     hibernate:
-      ddl-auto: create-drop  # 앱 시작 시 테이블 자동 생성, 종료 시 삭제
+      ddl-auto: create-drop  # ???�작 ???�이�??�동 ?�성, 종료 ????��
     properties:
       hibernate:
         format_sql: true
     show-sql: true
     defer-datasource-initialization: true
     open-in-view: false
+
