@@ -37,7 +37,6 @@ out/
 .vscode/
 
 ### 기능별 시크릿 설정 파일 (절대 깃에 올리면 안 됨!) ###
-application-auth.yml
 application-map.yml
 application-community.yml
 application-notification.yml
