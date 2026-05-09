@@ -77,7 +77,7 @@ class _KakaoMapScreenState extends State<KakaoMapScreen> {
       final style = await rootBundle.loadString('assets/map/style.css');
       final app = await rootBundle.loadString('assets/map/app.js');
       final html = _buildMapHtml(style: style, app: app);
-      await _controller!.loadHtmlString(html, baseUrl: 'https://localhost');
+      await _controller!.loadHtmlString(html, baseUrl: 'https://ourt.kro.kr');
     } catch (error) {
       if (mounted) {
         setState(() {
