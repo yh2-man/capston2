@@ -64,9 +64,21 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
       if (result['success'] == true) {
         final data = result['data'];
-        await prefs.setString('accessToken', data['accessToken'] ?? '');
+        final accessToken = data['accessToken'] ?? '';
+        await prefs.setString('accessToken', accessToken);
         await prefs.setString('refreshToken', data['refreshToken'] ?? '');
         await prefs.remove('tempToken');
+
+        // FCM 토큰 백엔드에 전송
+        final fcmToken = prefs.getString('fcmToken');
+        if (fcmToken != null && accessToken.isNotEmpty) {
+          AuthApiService.saveFcmToken(
+            accessToken: accessToken,
+            fcmToken: fcmToken,
+          );
+        }
+
+        if (!mounted) return;
         Navigator.pushReplacementNamed(context, '/main');
       } else {
         final errorMsg = result['error']?['message'] ?? '가입에 실패했습니다.';
