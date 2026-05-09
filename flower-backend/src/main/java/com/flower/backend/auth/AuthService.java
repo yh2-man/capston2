@@ -77,6 +77,15 @@ public class AuthService {
                 .build();
     }
 
+    // ─── FCM 토큰 저장 ───────────────────────────────────────────────────
+    @Transactional
+    public void saveFcmToken(Long userId, String fcmToken) {
+        userRepository.findById(userId).ifPresent(user -> {
+            user.updateFcmToken(fcmToken);
+            userRepository.save(user);
+        });
+    }
+
     // ─── 로그아웃 ────────────────────────────────────────────────────────
     // 현재는 Stateless 방식: 클라이언트에서 토큰 삭제로 처리
     // 추후 필요 시 DB에 Refresh Token 블랙리스트 테이블 추가하여 서버 측 무효화 가능

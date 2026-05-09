@@ -38,6 +38,21 @@ class AuthApiService {
     return jsonDecode(response.body);
   }
 
+  // ─── FCM 토큰 저장 ────────────────────────────────────────
+  static Future<void> saveFcmToken({
+    required String accessToken,
+    required String fcmToken,
+  }) async {
+    await http.post(
+      Uri.parse('$baseUrl/fcm-token'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $accessToken',
+      },
+      body: jsonEncode({'fcmToken': fcmToken}),
+    );
+  }
+
   // ─── 프로필 설정 (신규 유저) ────────────────────────────────
 
   static Future<Map<String, dynamic>> setupProfile({

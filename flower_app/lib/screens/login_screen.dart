@@ -58,8 +58,19 @@ class _LoginScreenState extends State<LoginScreen> {
           if (!mounted) return;
           Navigator.pushReplacementNamed(context, '/profile-setup');
         } else {
-          await prefs.setString('accessToken', data['accessToken'] ?? '');
+          final accessToken = data['accessToken'] ?? '';
+          await prefs.setString('accessToken', accessToken);
           await prefs.setString('refreshToken', data['refreshToken'] ?? '');
+
+          // FCM 토큰 백엔드에 전송
+          final fcmToken = prefs.getString('fcmToken');
+          if (fcmToken != null && accessToken.isNotEmpty) {
+            AuthApiService.saveFcmToken(
+              accessToken: accessToken,
+              fcmToken: fcmToken,
+            );
+          }
+
           if (!mounted) return;
           Navigator.pushReplacementNamed(context, '/main');
         }

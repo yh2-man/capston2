@@ -33,6 +33,15 @@ public class AuthController {
                 oAuthService.processKakao(request.getAuthCode(), request.getRedirectUri())));
     }
 
+    @PostMapping("/fcm-token")
+    public ResponseEntity<ApiResponse<Void>> saveFcmToken(@RequestBody java.util.Map<String, String> body) {
+        var auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        Long userId = (Long) auth.getPrincipal();
+        authService.saveFcmToken(userId, body.get("fcmToken"));
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout() {
         var auth = org.springframework.security.core.context.SecurityContextHolder
