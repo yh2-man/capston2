@@ -74,10 +74,23 @@ class _KakaoMapScreenState extends State<KakaoMapScreen> {
         return;
       }
 
-      final style = await rootBundle.loadString('assets/map/style.css');
-      final app = await rootBundle.loadString('assets/map/app.js');
-      final html = _buildMapHtml(style: style, app: app);
-      await _controller!.loadHtmlString(html, baseUrl: 'https://ourt.kro.kr');
+      // 실제 서버 URL로 로드 (도메인 인증을 위해 문자열 로드 대신 URL 사용)
+      final useAndroidHost = defaultTargetPlatform == TargetPlatform.android;
+      final mapConfig = Uri(queryParameters: {
+        'kakaoKey': ApiConfig.kakaoMapKey,
+        'apiBaseUrl': ApiConfig.mapApiBaseUrl(androidEmulator: useAndroidHost),
+        'centerLat': '37.5665',
+        'centerLng': '126.9780',
+        'zoom': '5',
+        'radius': '5000',
+        'maxRadius': '50000',
+        'limit': '50',
+        'embedded': widget.isEmbedded ? '1' : '0',
+        'tourApiKey': ApiConfig.tourApiKey,
+      }).query;
+      await _controller!.loadRequest(
+        Uri.parse('https://ourt.kro.kr/map/index.html#$mapConfig'),
+      );
     } catch (error) {
       if (mounted) {
         setState(() {
