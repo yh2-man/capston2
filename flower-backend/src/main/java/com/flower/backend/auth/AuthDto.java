@@ -1,6 +1,7 @@
 // [기능 ID: AUTH-01~06] [명세 근거: PRD §4.0 / API Spec §2.1~2.6]
 package com.flower.backend.auth;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Builder;
@@ -45,7 +46,8 @@ public class AuthDto {
     @Getter
     @Builder
     public static class OAuthNewUserResponse {
-        private boolean isNewUser;    // true → 프로필 설정 화면으로 이동
+        @JsonProperty("isNewUser")
+        private boolean isNewUser;
         private String tempToken;
         private String provider;
     }
