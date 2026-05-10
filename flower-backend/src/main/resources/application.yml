@@ -20,6 +20,11 @@ spring:
     show-sql: true
     defer-datasource-initialization: true
     open-in-view: false
+  web:
+    resources:
+      static-locations: file:uploads/,classpath:/static/
+  mvc:
+    static-path-pattern: /uploads/**
 
 # 로컬 개발용 기본값 (운영에서는 환경변수로 대체됨)
 KAKAO_CLIENT_ID: 5e1aa770b3e4ae2c226e140721223288
@@ -29,10 +34,3 @@ JWT_SECRET: this-is-a-very-secure-and-long-secret-key-for-jwt-signing
 storage:
   upload-dir: uploads
   base-url: http://localhost:8080
-
-spring:
-  web:
-    resources:
-      static-locations: file:uploads/,classpath:/static/
-  mvc:
-    static-path-pattern: /uploads/**
