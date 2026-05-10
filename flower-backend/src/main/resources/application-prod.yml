@@ -1,6 +1,10 @@
 ﻿storage:
   upload-dir: /home/ubuntu/app/uploads
   base-url: https://ourt.kro.kr
+  oracle:
+    namespace: ${ORACLE_NAMESPACE}
+    bucket: ${ORACLE_BUCKET}
+    region: ${ORACLE_REGION:ap-chuncheon-1}
 
 spring:
   web:

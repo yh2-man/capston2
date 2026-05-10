@@ -28,6 +28,9 @@ dependencies {
 	runtimeOnly 'com.h2database:h2'  // 로컬 테스트용 (서버 배포 시 제거)
 	annotationProcessor 'org.projectlombok:lombok'
 
+	// Oracle Cloud Object Storage (Instance Principal 인증)
+	implementation 'com.oracle.oci.sdk:oci-java-sdk-objectstorage:3.46.0'
+
 	// JWT
 	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'

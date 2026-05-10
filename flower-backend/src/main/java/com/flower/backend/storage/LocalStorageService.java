@@ -13,6 +13,7 @@ import java.util.UUID;
 
 @Slf4j
 @Service
+@org.springframework.context.annotation.Profile("!prod")
 public class LocalStorageService implements StorageService {
 
     @Value("${storage.upload-dir:uploads}")
