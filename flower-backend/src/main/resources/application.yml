@@ -25,3 +25,14 @@ spring:
 KAKAO_CLIENT_ID: 5e1aa770b3e4ae2c226e140721223288
 KAKAO_CLIENT_SECRET: 17s81YP5cCJ1WPmqpwKfLo1SV4MF62d7
 JWT_SECRET: this-is-a-very-secure-and-long-secret-key-for-jwt-signing
+
+storage:
+  upload-dir: uploads
+  base-url: http://localhost:8080
+
+spring:
+  web:
+    resources:
+      static-locations: file:uploads/,classpath:/static/
+  mvc:
+    static-path-pattern: /uploads/**

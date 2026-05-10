@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/season_theme.dart';
 import '../services/community_api_service.dart';
+import 'create_post_screen.dart';
 
 class CommunityFeedScreen extends StatefulWidget {
   const CommunityFeedScreen({super.key});
@@ -13,6 +14,7 @@ class CommunityFeedScreen extends StatefulWidget {
 class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
   List<CommunityPost> _posts = [];
   bool _isLoading = true;
+  String _accessToken = '';
 
   @override
   void initState() {
@@ -22,9 +24,31 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
 
   Future<void> _loadPosts() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('accessToken') ?? '';
-    final posts = await CommunityApiService.getPosts(token);
+    _accessToken = prefs.getString('accessToken') ?? '';
+    final posts = await CommunityApiService.getPosts(_accessToken);
     if (mounted) setState(() { _posts = posts; _isLoading = false; });
+  }
+
+  Future<void> _openCreatePost() async {
+    final newPost = await Navigator.push<CommunityPost>(
+      context,
+      MaterialPageRoute(builder: (_) => const CreatePostScreen()),
+    );
+    if (newPost != null) setState(() => _posts.insert(0, newPost));
+  }
+
+  Future<void> _toggleLike(int index) async {
+    final post = _posts[index];
+    setState(() {
+      post.liked = !post.liked;
+    });
+    await CommunityApiService.toggleLike(_accessToken, post.id);
+  }
+
+  Future<void> _toggleSave(int index) async {
+    final post = _posts[index];
+    setState(() => post.saved = !post.saved);
+    await CommunityApiService.toggleSave(_accessToken, post.id);
   }
 
   @override
@@ -43,17 +67,42 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.add_circle_outline, color: colors.primary),
-            onPressed: () => _showNewPostDialog(context, colors),
+            onPressed: _openCreatePost,
           ),
         ],
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: colors.primary))
-          : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: _posts.length,
-              itemBuilder: (context, index) => _buildPostCard(_posts[index], colors, index),
+          : RefreshIndicator(
+              onRefresh: _loadPosts,
+              child: _posts.isEmpty
+                  ? _buildEmpty(colors)
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      itemCount: _posts.length,
+                      itemBuilder: (context, index) =>
+                          _buildPostCard(_posts[index], colors, index),
+                    ),
             ),
+    );
+  }
+
+  Widget _buildEmpty(SeasonColors colors) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.local_florist_outlined, size: 60, color: Colors.grey[300]),
+          const SizedBox(height: 12),
+          Text('아직 게시글이 없어요', style: TextStyle(color: Colors.grey[500], fontSize: 16)),
+          const SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: _openCreatePost,
+            style: ElevatedButton.styleFrom(backgroundColor: colors.primary),
+            child: const Text('첫 게시글 작성하기', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -79,7 +128,12 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
                 CircleAvatar(
                   radius: 20,
                   backgroundColor: colors.primary.withAlpha(25),
-                  child: Text(post.avatar, style: const TextStyle(fontSize: 22)),
+                  backgroundImage: post.profileImageUrl != null
+                      ? NetworkImage(post.profileImageUrl!) : null,
+                  child: post.profileImageUrl == null
+                      ? Text(post.user.isNotEmpty ? post.user[0] : '?',
+                          style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold))
+                      : null,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -88,10 +142,10 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
                     children: [
                       Text(post.user, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                       Row(children: [
-                        if (post.location != null) ...[
+                        if (post.address != null) ...[
                           Icon(Icons.location_on, size: 12, color: Colors.grey[400]),
                           const SizedBox(width: 2),
-                          Text(post.location!, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                          Text(post.address!, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
                           const SizedBox(width: 8),
                         ],
                         Text(post.time, style: TextStyle(fontSize: 11, color: Colors.grey[400])),
@@ -108,20 +162,20 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
               ],
             ),
           ),
-          Container(
-            height: 200, width: double.infinity,
-            color: flowerColors[index % flowerColors.length].withAlpha(80),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(post.avatar, style: const TextStyle(fontSize: 60)),
-                  const SizedBox(height: 4),
-                  Text('${post.flowerSpecies ?? ''} 사진', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
-                ],
+          if (post.imageUrl != null)
+            Image.network(post.imageUrl!, height: 200, width: double.infinity, fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                height: 200,
+                color: flowerColors[index % flowerColors.length].withAlpha(80),
+                child: const Icon(Icons.broken_image, size: 48, color: Colors.grey),
               ),
+            )
+          else
+            Container(
+              height: 120,
+              color: flowerColors[index % flowerColors.length].withAlpha(80),
+              child: Center(child: Icon(Icons.local_florist, size: 48, color: colors.primary.withAlpha(100))),
             ),
-          ),
           Padding(
             padding: const EdgeInsets.all(14),
             child: Text(post.content, style: const TextStyle(fontSize: 14, height: 1.5)),
@@ -135,39 +189,21 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
                     post.liked ? Icons.favorite : Icons.favorite_border,
                     color: post.liked ? Colors.red[400] : Colors.grey[400], size: 22,
                   ),
-                  onPressed: () async {
-                    final prefs = await SharedPreferences.getInstance();
-                    final token = prefs.getString('accessToken') ?? '';
-                    await CommunityApiService.likePost(token, post.id);
-                    setState(() {
-                      post.liked = !post.liked;
-                    });
-                  },
+                  onPressed: () => _toggleLike(index),
                 ),
                 Text('${post.likeCount}', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
                 const SizedBox(width: 16),
                 Icon(Icons.chat_bubble_outline, size: 20, color: Colors.grey[400]),
                 const Spacer(),
-                Icon(Icons.bookmark_border, size: 22, color: Colors.grey[400]),
+                IconButton(
+                  icon: Icon(
+                    post.saved ? Icons.bookmark : Icons.bookmark_border,
+                    color: post.saved ? colors.primary : Colors.grey[400], size: 22,
+                  ),
+                  onPressed: () => _toggleSave(index),
+                ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showNewPostDialog(BuildContext context, SeasonColors colors) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('새 게시글', style: TextStyle(color: colors.primary)),
-        content: const Text('게시글 작성 기능은 백엔드 서버 연동 후 사용 가능합니다.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('확인', style: TextStyle(color: colors.primary)),
           ),
         ],
       ),

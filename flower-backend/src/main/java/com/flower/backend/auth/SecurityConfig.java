@@ -54,6 +54,7 @@ public class SecurityConfig {
                     "/api/v1/auth/oauth/**",
                     "/api/v1/auth/profile-setup",
                     "/oauth/callback",
+                    "/uploads/**",
                     "/error"
                 ).permitAll()
                 .anyRequest().authenticated()

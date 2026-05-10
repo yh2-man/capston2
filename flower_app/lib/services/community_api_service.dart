@@ -1,84 +1,155 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../api_config.dart';
 
 class CommunityPost {
   final int id;
+  final int userId;
   final String user;
-  final String avatar;
+  final String? profileImageUrl;
   final String content;
   final String? flowerSpecies;
   final String? imageUrl;
+  final String? address;
+  final double? latitude;
+  final double? longitude;
   final int likeCount;
   bool liked;
+  bool saved;
   final String time;
-  final String? location;
 
   CommunityPost({
     required this.id,
+    required this.userId,
     required this.user,
-    required this.avatar,
+    this.profileImageUrl,
     required this.content,
     this.flowerSpecies,
     this.imageUrl,
+    this.address,
+    this.latitude,
+    this.longitude,
     required this.likeCount,
     this.liked = false,
+    this.saved = false,
     required this.time,
-    this.location,
   });
 
   factory CommunityPost.fromJson(Map<String, dynamic> json) {
     return CommunityPost(
       id: json['id'] as int,
+      userId: json['userId'] as int? ?? 0,
       user: json['nickname'] as String? ?? '익명',
-      avatar: '🌸',
+      profileImageUrl: json['profileImageUrl'] as String?,
       content: json['content'] as String,
       flowerSpecies: json['flowerSpecies'] as String?,
       imageUrl: json['imageUrl'] as String?,
+      address: json['address'] as String?,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
       likeCount: json['likeCount'] as int? ?? 0,
       liked: json['liked'] as bool? ?? false,
+      saved: json['saved'] as bool? ?? false,
       time: json['createdAt'] as String? ?? '',
-      location: json['address'] as String?,
     );
   }
 }
 
 class CommunityApiService {
-  static Future<List<CommunityPost>> getPosts(String accessToken) async {
+  static String get _baseUrl => '${ApiConfig.backendBaseUrl()}/api/v1/community';
+
+  static Future<List<CommunityPost>> getPosts(String accessToken, {int? cursor}) async {
     try {
-      final response = await http.get(
-        Uri.parse('${ApiConfig.backendBaseUrl()}/api/v1/community/posts'),
+      final uri = Uri.parse('$_baseUrl/posts').replace(
+        queryParameters: {
+          if (cursor != null) 'cursor': cursor.toString(),
+          'limit': '10',
+        },
+      );
+      final response = await http.get(uri,
         headers: {'Authorization': 'Bearer $accessToken'},
       ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
-        final data = body['data'] as List;
-        return data.map((e) => CommunityPost.fromJson(e as Map<String, dynamic>)).toList();
+        final data = body['data'] as Map<String, dynamic>;
+        final posts = data['posts'] as List;
+        return posts.map((e) => CommunityPost.fromJson(e as Map<String, dynamic>)).toList();
       }
     } catch (_) {}
     return _mockPosts();
   }
 
-  static Future<void> likePost(String accessToken, int postId) async {
+  static Future<CommunityPost?> createPost({
+    required String accessToken,
+    required String content,
+    String? flowerSpecies,
+    File? image,
+    double? latitude,
+    double? longitude,
+    String? address,
+  }) async {
     try {
-      await http.post(
-        Uri.parse('${ApiConfig.backendBaseUrl()}/api/v1/community/posts/$postId/like'),
+      final request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/posts'));
+      request.headers['Authorization'] = 'Bearer $accessToken';
+      request.fields['content'] = content;
+      if (flowerSpecies != null) request.fields['flowerSpecies'] = flowerSpecies;
+      if (latitude != null) request.fields['latitude'] = latitude.toString();
+      if (longitude != null) request.fields['longitude'] = longitude.toString();
+      if (address != null) request.fields['address'] = address;
+      if (image != null) {
+        request.files.add(await http.MultipartFile.fromPath('image', image.path));
+      }
+
+      final streamedResponse = await request.send().timeout(const Duration(seconds: 30));
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 201) {
+        final body = jsonDecode(response.body);
+        return CommunityPost.fromJson(body['data'] as Map<String, dynamic>);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  static Future<Map<String, dynamic>> toggleLike(String accessToken, int postId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/posts/$postId/like'),
         headers: {'Authorization': 'Bearer $accessToken'},
       ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body)['data'] as Map<String, dynamic>;
+      }
     } catch (_) {}
+    return {};
+  }
+
+  static Future<Map<String, dynamic>> toggleSave(String accessToken, int postId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/posts/$postId/save'),
+        headers: {'Authorization': 'Bearer $accessToken'},
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body)['data'] as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return {};
   }
 
   static List<CommunityPost> _mockPosts() => [
-    CommunityPost(id: 1, user: '꽃사랑봄', avatar: '🌸', content: '오늘 여의도에서 만개한 벚꽃을 발견했어요! 정말 예쁘더라구요 🌸',
-      flowerSpecies: '벚꽃', likeCount: 42, time: '30분 전', location: '여의도 한강공원'),
-    CommunityPost(id: 2, user: '산책매니아', avatar: '🚶', content: '산책길에 노란 개나리가 활짝 폈네요. 봄이 왔다는 걸 실감합니다!',
-      flowerSpecies: '개나리', likeCount: 28, liked: true, time: '1시간 전', location: '남산 둘레길'),
-    CommunityPost(id: 3, user: '플라워헌터', avatar: '🔍', content: '관악산 등산로에서 진달래 군락지를 발견했습니다! 퀘스트 인증 완료 ✅',
-      flowerSpecies: '진달래', likeCount: 56, time: '3시간 전', location: '관악산 등산로'),
-    CommunityPost(id: 4, user: '정원사킴', avatar: '🌱', content: '동네 공원에 목련이 피기 시작했어요. 향기가 정말 좋습니다~',
-      flowerSpecies: '목련', likeCount: 35, time: '5시간 전', location: '올림픽공원'),
-    CommunityPost(id: 5, user: '자연탐험가', avatar: '🌿', content: '용산 식물원 튤립 축제 다녀왔습니다. 색깔별로 너무 예뻐요! 🌷',
-      flowerSpecies: '튤립', likeCount: 89, liked: true, time: '어제', location: '용산 식물원'),
+    CommunityPost(id: 1, userId: 0, user: '꽃사랑봄',
+      content: '오늘 여의도에서 만개한 벚꽃을 발견했어요! 🌸',
+      flowerSpecies: '벚꽃', likeCount: 42, time: '30분 전', address: '여의도 한강공원'),
+    CommunityPost(id: 2, userId: 0, user: '산책매니아',
+      content: '산책길에 노란 개나리가 활짝 폈네요.',
+      flowerSpecies: '개나리', likeCount: 28, liked: true, time: '1시간 전', address: '남산 둘레길'),
+    CommunityPost(id: 3, userId: 0, user: '플라워헌터',
+      content: '관악산 등산로에서 진달래 군락지를 발견했습니다! ✅',
+      flowerSpecies: '진달래', likeCount: 56, time: '3시간 전', address: '관악산 등산로'),
   ];
 }

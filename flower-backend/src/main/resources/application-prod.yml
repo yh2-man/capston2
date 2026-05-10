@@ -1,4 +1,13 @@
-﻿spring:
+﻿storage:
+  upload-dir: /home/ubuntu/app/uploads
+  base-url: https://ourt.kro.kr
+
+spring:
+  web:
+    resources:
+      static-locations: file:/home/ubuntu/app/uploads/,classpath:/static/
+  mvc:
+    static-path-pattern: /uploads/**
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
