@@ -7,6 +7,12 @@
     region: ${ORACLE_REGION:ap-chuncheon-1}
 
 spring:
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: ${OPENAI_MODEL:gpt-4o-mini}
   web:
     resources:
       static-locations: file:/home/ubuntu/app/uploads/,classpath:/static/
