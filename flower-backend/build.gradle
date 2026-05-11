@@ -17,12 +17,6 @@ repositories {
 	mavenCentral()
 }
 
-dependencyManagement {
-	imports {
-		mavenBom "org.springframework.ai:spring-ai-bom:1.0.5"
-	}
-}
-
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.hibernate.orm:hibernate-spatial'
@@ -37,9 +31,6 @@ dependencies {
 	// Oracle Cloud Object Storage (Instance Principal 인증)
 	implementation 'com.oracle.oci.sdk:oci-java-sdk-objectstorage:3.46.0'
 	implementation 'com.oracle.oci.sdk:oci-java-sdk-common-httpclient-jersey3:3.46.0'
-
-	// Spring AI (OpenAI — Ollama로 교체 시 spring-ai-starter-model-ollama로 변경)
-	implementation 'org.springframework.ai:spring-ai-starter-model-openai'
 
 	// JWT
 	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'

@@ -34,11 +34,3 @@ JWT_SECRET: this-is-a-very-secure-and-long-secret-key-for-jwt-signing
 storage:
   upload-dir: uploads
   base-url: http://localhost:8080
-
-spring:
-  ai:
-    openai:
-      api-key: ${OPENAI_API_KEY:dummy-key-for-local}
-      chat:
-        options:
-          model: ${OPENAI_MODEL:gpt-4o-mini}

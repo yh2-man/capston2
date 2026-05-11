@@ -63,6 +63,6 @@ jobs:
           username: ${{ secrets.ORACLE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            printf 'SPRING_PROFILES_ACTIVE=prod\nKAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}\nKAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}\nJWT_SECRET=${{ secrets.JWT_SECRET }}\nDB_URL=jdbc:postgresql://aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres?sslmode=require\nDB_USERNAME=postgres.eycyfnteenxtrumzfyya\nDB_PASSWORD=${{ secrets.DB_PASSWORD }}\nORACLE_NAMESPACE=${{ secrets.ORACLE_NAMESPACE }}\nORACLE_BUCKET=${{ secrets.ORACLE_BUCKET }}\nORACLE_REGION=${{ secrets.ORACLE_REGION }}\nOPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}\n' > ~/app/app.env
+            printf 'SPRING_PROFILES_ACTIVE=prod\nKAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}\nKAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}\nJWT_SECRET=${{ secrets.JWT_SECRET }}\nDB_URL=jdbc:postgresql://aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres?sslmode=require\nDB_USERNAME=postgres.eycyfnteenxtrumzfyya\nDB_PASSWORD=${{ secrets.DB_PASSWORD }}\nORACLE_NAMESPACE=${{ secrets.ORACLE_NAMESPACE }}\nORACLE_BUCKET=${{ secrets.ORACLE_BUCKET }}\nORACLE_REGION=${{ secrets.ORACLE_REGION }}\n' > ~/app/app.env
             sudo systemctl restart ourt-backend
             echo "서버 시작 완료"
