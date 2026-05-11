@@ -1,21 +1,18 @@
 import 'package:flutter/material.dart';
 import '../models/chat_message.dart';
-import '../models/chat_action.dart';
+import '../theme/season_theme.dart';
 
 class MessageBubble extends StatelessWidget {
   final ChatMessage message;
-  final VoidCallback? onActionTap;
 
-  const MessageBubble({
-    super.key,
-    required this.message,
-    this.onActionTap,
-  });
+  const MessageBubble({super.key, required this.message});
 
   @override
   Widget build(BuildContext context) {
+    final colors = SeasonTheme.getColors();
+
     if (message.role == MessageRole.loading) {
-      return _buildLoadingBubble();
+      return _buildLoadingBubble(colors);
     }
 
     final isUser = message.role == MessageRole.user;
@@ -23,64 +20,52 @@ class MessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment:
-            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (!isUser) _buildAvatar(),
+          if (!isUser) _buildAvatar(colors),
           const SizedBox(width: 8),
           Flexible(
             child: Column(
-              crossAxisAlignment:
-                  isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
-                _buildBubble(isUser, context),
-                if (message.action != null && !isUser)
-                  _buildActionButton(message.action!, context),
-              ],
+              crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [_buildBubble(isUser, colors)],
             ),
           ),
           const SizedBox(width: 8),
-          if (isUser) _buildUserAvatar(),
+          if (isUser) _buildUserAvatar(colors),
         ],
       ),
     );
   }
 
-  Widget _buildAvatar() {
+  Widget _buildAvatar(SeasonColors colors) {
     return CircleAvatar(
       radius: 18,
-      backgroundColor: const Color(0xFF6A9C89),
-      child: const Text('🌸', style: TextStyle(fontSize: 16)),
+      backgroundColor: colors.primary.withAlpha(38),
+      child: Icon(Icons.smart_toy_outlined, color: colors.primary, size: 18),
     );
   }
 
-  Widget _buildUserAvatar() {
+  Widget _buildUserAvatar(SeasonColors colors) {
     return CircleAvatar(
       radius: 18,
-      backgroundColor: const Color(0xFF4A90D9),
+      backgroundColor: colors.primary,
       child: const Icon(Icons.person, color: Colors.white, size: 18),
     );
   }
 
-  Widget _buildBubble(bool isUser, BuildContext context) {
+  Widget _buildBubble(bool isUser, SeasonColors colors) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: isUser ? const Color(0xFF4A90D9) : Colors.white,
+        color: isUser ? colors.primary : Colors.white.withAlpha(242),
         borderRadius: BorderRadius.only(
           topLeft: const Radius.circular(18),
           topRight: const Radius.circular(18),
           bottomLeft: Radius.circular(isUser ? 18 : 4),
           bottomRight: Radius.circular(isUser ? 4 : 18),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 6, offset: const Offset(0, 2))],
       ),
       child: Text(
         message.content,
@@ -93,54 +78,7 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton(ChatAction action, BuildContext context) {
-    if (action.type != 'NAVIGATE') return const SizedBox.shrink();
-
-    final isMap = action.target == 'MAP';
-    final icon = isMap ? Icons.map_rounded : Icons.people_rounded;
-    final label = isMap ? '지도에서 확인하기 →' : '커뮤니티 보러 가기 →';
-    final color = isMap
-        ? const Color(0xFF6A9C89)
-        : const Color(0xFFE07B54);
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: GestureDetector(
-        onTap: onActionTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: color.withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: Colors.white, size: 16),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoadingBubble() {
+  Widget _buildLoadingBubble(SeasonColors colors) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -149,8 +87,8 @@ class MessageBubble extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 18,
-            backgroundColor: const Color(0xFF6A9C89),
-            child: const Text('🌸', style: TextStyle(fontSize: 16)),
+            backgroundColor: colors.primary.withAlpha(38),
+            child: Icon(Icons.smart_toy_outlined, color: colors.primary, size: 18),
           ),
           const SizedBox(width: 8),
           Container(
@@ -163,15 +101,9 @@ class MessageBubble extends StatelessWidget {
                 bottomRight: Radius.circular(18),
                 bottomLeft: Radius.circular(4),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              boxShadow: [BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 6, offset: const Offset(0, 2))],
             ),
-            child: const _TypingIndicator(),
+            child: _TypingIndicator(color: colors.primary),
           ),
         ],
       ),
@@ -180,14 +112,14 @@ class MessageBubble extends StatelessWidget {
 }
 
 class _TypingIndicator extends StatefulWidget {
-  const _TypingIndicator();
+  const _TypingIndicator({required this.color});
+  final Color color;
 
   @override
   State<_TypingIndicator> createState() => _TypingIndicatorState();
 }
 
-class _TypingIndicatorState extends State<_TypingIndicator>
-    with TickerProviderStateMixin {
+class _TypingIndicatorState extends State<_TypingIndicator> with TickerProviderStateMixin {
   late final List<AnimationController> _controllers;
   late final List<Animation<double>> _animations;
 
@@ -195,17 +127,12 @@ class _TypingIndicatorState extends State<_TypingIndicator>
   void initState() {
     super.initState();
     _controllers = List.generate(3, (i) {
-      return AnimationController(
-        vsync: this,
-        duration: const Duration(milliseconds: 400),
-      )..repeat(reverse: true, period: Duration(milliseconds: 400 + i * 150));
+      return AnimationController(vsync: this, duration: const Duration(milliseconds: 400))
+        ..repeat(reverse: true, period: Duration(milliseconds: 400 + i * 150));
     });
     _animations = _controllers
-        .map((c) => Tween<double>(begin: 0, end: -6).animate(
-              CurvedAnimation(parent: c, curve: Curves.easeInOut),
-            ))
+        .map((c) => Tween<double>(begin: 0, end: -6).animate(CurvedAnimation(parent: c, curve: Curves.easeInOut)))
         .toList();
-
     for (int i = 0; i < _controllers.length; i++) {
       Future.delayed(Duration(milliseconds: i * 150), () {
         if (mounted) _controllers[i].repeat(reverse: true);
@@ -234,10 +161,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
               margin: const EdgeInsets.symmetric(horizontal: 3),
               width: 8,
               height: 8,
-              decoration: BoxDecoration(
-                color: const Color(0xFF6A9C89),
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle),
             ),
           ),
         );

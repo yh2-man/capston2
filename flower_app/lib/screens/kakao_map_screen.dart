@@ -7,19 +7,25 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../api_config.dart';
+import '../models/chat_action.dart';
 import '../theme/season_theme.dart';
 import '../widgets/map_html_view.dart';
 
 class KakaoMapScreen extends StatefulWidget {
   final bool isEmbedded;
+  final List<ChatAction>? initialActions;
 
-  const KakaoMapScreen({super.key, this.isEmbedded = false});
+  const KakaoMapScreen({
+    super.key,
+    this.isEmbedded = false,
+    this.initialActions,
+  });
 
   @override
-  State<KakaoMapScreen> createState() => _KakaoMapScreenState();
+  State<KakaoMapScreen> createState() => KakaoMapScreenState();
 }
 
-class _KakaoMapScreenState extends State<KakaoMapScreen> {
+class KakaoMapScreenState extends State<KakaoMapScreen> {
   WebViewController? _controller;
   String? _mapHtml;
   late final String _webMapViewType = 'flower-map-${identityHashCode(this)}';
@@ -42,7 +48,10 @@ class _KakaoMapScreenState extends State<KakaoMapScreen> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageFinished: (_) {
-            if (mounted) setState(() => _isLoading = false);
+            if (mounted) {
+              setState(() => _isLoading = false);
+              _applyInitialActions();
+            }
           },
           onWebResourceError: (error) {
             if (mounted && error.isForMainFrame == true) {
@@ -62,6 +71,37 @@ class _KakaoMapScreenState extends State<KakaoMapScreen> {
           },
         ),
       );
+  }
+
+  Future<void> _applyInitialActions() async {
+    final actions = widget.initialActions;
+    if (actions == null || actions.isEmpty) return;
+    for (final action in actions) {
+      if (action.type == 'MAP_SET_SEARCH_QUERY') {
+        final query = action.params?['query'] as String? ?? action.params?['q'] as String? ?? '';
+        if (query.isNotEmpty) await setSearchQuery(query);
+      }
+    }
+  }
+
+  Future<void> setSearchQuery(String query) async {
+    final escaped = query.replaceAll("'", "\\'");
+    await _controller?.runJavaScript(
+      "var el = document.getElementById('search-input');"
+      "if(el){ el.value='$escaped'; el.dispatchEvent(new Event('input',{bubbles:true})); }",
+    );
+  }
+
+  Future<void> zoomIn() async {
+    await _controller?.runJavaScript("document.getElementById('btn-zoom-in')?.click();");
+  }
+
+  Future<void> zoomOut() async {
+    await _controller?.runJavaScript("document.getElementById('btn-zoom-out')?.click();");
+  }
+
+  Future<void> moveToCurrentLocation() async {
+    await _controller?.runJavaScript("document.getElementById('btn-gps')?.click();");
   }
 
   Future<void> _loadMapHtml() async {
