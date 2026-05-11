@@ -78,7 +78,7 @@ class CommunityApiService {
         return posts.map((e) => CommunityPost.fromJson(e as Map<String, dynamic>)).toList();
       }
     } catch (_) {}
-    return _mockPosts();
+    return [];
   }
 
   static Future<CommunityPost?> createPost({
@@ -141,15 +141,4 @@ class CommunityApiService {
     return {};
   }
 
-  static List<CommunityPost> _mockPosts() => [
-    CommunityPost(id: 1, userId: 0, user: '꽃사랑봄',
-      content: '오늘 여의도에서 만개한 벚꽃을 발견했어요! 🌸',
-      flowerSpecies: '벚꽃', likeCount: 42, time: '30분 전', address: '여의도 한강공원'),
-    CommunityPost(id: 2, userId: 0, user: '산책매니아',
-      content: '산책길에 노란 개나리가 활짝 폈네요.',
-      flowerSpecies: '개나리', likeCount: 28, liked: true, time: '1시간 전', address: '남산 둘레길'),
-    CommunityPost(id: 3, userId: 0, user: '플라워헌터',
-      content: '관악산 등산로에서 진달래 군락지를 발견했습니다! ✅',
-      flowerSpecies: '진달래', likeCount: 56, time: '3시간 전', address: '관악산 등산로'),
-  ];
 }

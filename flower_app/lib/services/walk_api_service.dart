@@ -39,7 +39,7 @@ class WalkApiService {
         return data.map((e) => WalkRecord.fromJson(e as Map<String, dynamic>)).toList();
       }
     } catch (_) {}
-    return _mockWeekly();
+    return [];
   }
 
   static Future<int> getPointBalance(String accessToken) async {
@@ -54,7 +54,7 @@ class WalkApiService {
         return body['data']['balance'] as int? ?? 0;
       }
     } catch (_) {}
-    return 320;
+    return 0;
   }
 
   static Future<void> syncSteps(String accessToken, int steps) async {
@@ -67,21 +67,4 @@ class WalkApiService {
     } catch (_) {}
   }
 
-  static List<WalkRecord> _mockWeekly() => [
-    const WalkRecord(day: '월', stepCount: 8234),
-    const WalkRecord(day: '화', stepCount: 6128),
-    const WalkRecord(day: '수', stepCount: 10502),
-    const WalkRecord(day: '목', stepCount: 7891),
-    const WalkRecord(day: '금', stepCount: 5422),
-    const WalkRecord(day: '토', stepCount: 12300),
-    const WalkRecord(day: '일', stepCount: 4283),
-  ];
-
-  static List<PointHistory> mockPointHistory() => [
-    const PointHistory(desc: '걸음 포인트 적립', amount: 42, type: 'STEP', time: '오늘 09:30'),
-    const PointHistory(desc: '벚꽃 퀘스트 완료', amount: 50, type: 'QUEST', time: '어제 14:20'),
-    const PointHistory(desc: '커피 쿠폰 교환', amount: -100, type: 'SHOP', time: '3일 전'),
-    const PointHistory(desc: '걸음 포인트 적립', amount: 103, type: 'STEP', time: '3일 전'),
-    const PointHistory(desc: '장미 퀘스트 완료', amount: 75, type: 'QUEST', time: '5일 전'),
-  ];
 }

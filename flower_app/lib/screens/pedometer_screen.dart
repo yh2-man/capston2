@@ -44,12 +44,12 @@ class _PedometerScreenState extends State<PedometerScreen> with SingleTickerProv
     final points = await WalkApiService.getPointBalance(token);
 
     if (mounted) {
-      final todaySteps = weekly.isNotEmpty ? weekly.last.stepCount : 4283;
+      final todaySteps = weekly.isNotEmpty ? weekly.last.stepCount : 0;
       setState(() {
         _weeklyData = weekly;
         _pointBalance = points;
         _steps = todaySteps;
-        _pointHistory = WalkApiService.mockPointHistory();
+        _pointHistory = [];
         _isLoading = false;
         _progressAnim = Tween<double>(begin: 0, end: _steps / _goalSteps)
             .animate(CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic));
