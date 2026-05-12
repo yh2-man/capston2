@@ -438,6 +438,151 @@ body,
   white-space: nowrap;
 }
 
+/* ── Route panel ── */
+.route-panel {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: max(14px, env(safe-area-inset-top));
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  z-index: 50;
+  padding: 14px 16px;
+  animation: routeSlideIn 250ms ease;
+}
+
+@keyframes routeSlideIn {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.route-panel-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.route-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.route-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.route-info strong {
+  display: block;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ink);
+}
+
+.route-info span {
+  display: block;
+  font-size: 12px;
+  color: var(--primary-dark);
+  margin-top: 2px;
+  font-weight: 600;
+}
+
+.route-close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: #f0f0f0;
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+}
+
+.route-close:hover {
+  background: #e0e0e0;
+}
+
+.route-error {
+  border-left: 4px solid #e74c3c;
+}
+
+.route-error .route-info span {
+  color: #c0392b;
+}
+
+/* ── Route toggle button ── */
+.route-toggle {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: #f0f0f0;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+}
+
+.route-toggle:hover {
+  background: #e0e0e0;
+}
+
+/* ── Route steps (turn-by-turn) ── */
+.route-steps {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.route-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  border-bottom: 1px solid #f5f5f5;
+  font-size: 13px;
+}
+
+.route-step:last-child {
+  border-bottom: 0;
+}
+
+.step-num {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e8f0fe;
+  color: #4285F4;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.step-text {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink);
+}
+
+.step-dist {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
 .embedded-map .top-bar,
 .embedded-map .filters,
 .embedded-map .radius-card,

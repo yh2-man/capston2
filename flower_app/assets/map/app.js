@@ -20,7 +20,7 @@
     filtered: [],
     festivals: [],
     posts: [],
-    viewMode: 'festival', // 'festival' or 'flower'
+    viewMode: 'festival',
     currentPosition: null,
     radius: config.DEFAULT_RADIUS || 5000,
     selectedSpecies: null,
@@ -31,6 +31,12 @@
     markers: [],
     festivalMarkers: [],
     postMarkers: [],
+    routePolyline: null,
+    routeStartMarker: null,
+    routeEndMarker: null,
+    routeSteps: [],
+    _festivalCache: null,
+    _festivalCacheTime: 0,
   };
 
   // Mock 게시글 데이터 (Phase 2에서 Supabase로 교체)
@@ -74,6 +80,13 @@
   }
 
   async function loadFestivals() {
+    var cacheAge = Date.now() - state._festivalCacheTime;
+    if (state._festivalCache && cacheAge < 300000) {
+      state.festivals = state._festivalCache;
+      renderMap();
+      renderFestivalList();
+      return;
+    }
     const tourKey = config.TOUR_API_KEY;
     if (!tourKey) {
       console.log('[Festival] TOUR_API_KEY not set, skipping.');
@@ -150,6 +163,8 @@
             eventEndDate: item.eventenddate || '',
           };
         });
+      state._festivalCache = state.festivals.slice();
+      state._festivalCacheTime = Date.now();
       console.log('[Festival] Festivals with coordinates:', state.festivals.length);
       if (state.festivals.length > 0) {
         console.log('[Festival] First festival:', state.festivals[0].title, state.festivals[0].mapY, state.festivals[0].mapX);
@@ -559,15 +574,17 @@
   }
 
   function bindControls() {
-    $('#search-input').addEventListener('input', (event) => {
+    var debouncedFilter = debounce(function () { applyFilters(); }, 300);
+    $('#search-input').addEventListener('input', function (event) {
       state.search = event.target.value.trim();
-      applyFilters();
+      debouncedFilter();
     });
 
-    $('#radius-slider').addEventListener('input', (event) => {
+    var debouncedRadius = debounce(function () { applyFilters(); }, 200);
+    $('#radius-slider').addEventListener('input', function (event) {
       state.radius = Number(event.target.value);
       updateRadiusLabel();
-      applyFilters();
+      debouncedRadius();
     });
 
     $('#btn-gps').addEventListener('click', initGeolocation);
@@ -650,13 +667,7 @@
       + '  <button class="action-btn secondary" id="btn-close" type="button">닫기</button>'
       + '</div>';
     $('#btn-navigate-post').addEventListener('click', function () {
-      var name = encodeURIComponent(post.location || post.species);
-      var url = 'https://map.kakao.com/link/to/' + name + ',' + post.lat + ',' + post.lng;
-      if (window.FlowerBridge && window.FlowerBridge.openExternal) {
-        window.FlowerBridge.openExternal(url);
-        return;
-      }
-      window.location.href = url;
+      navigateInApp(post.lat, post.lng, post.location || post.species);
     });
     $('#btn-close').addEventListener('click', closeBottomSheet);
     $('#bottom-sheet-overlay').classList.add('visible');
@@ -685,13 +696,7 @@
       + '  <button class="action-btn secondary" id="btn-close" type="button">닫기</button>'
       + '</div>';
     $('#btn-navigate-festival').addEventListener('click', function () {
-      var name = encodeURIComponent(festival.title);
-      var url = 'https://map.kakao.com/link/to/' + name + ',' + festival.mapY + ',' + festival.mapX;
-      if (window.FlowerBridge && window.FlowerBridge.openExternal) {
-        window.FlowerBridge.openExternal(url);
-        return;
-      }
-      window.location.href = url;
+      navigateInApp(festival.mapY, festival.mapX, festival.title);
     });
     $('#btn-close').addEventListener('click', closeBottomSheet);
     $('#bottom-sheet-overlay').classList.add('visible');
@@ -699,13 +704,7 @@
   }
 
   function navigateToFlower(flower) {
-    const name = encodeURIComponent(flower.name);
-    const url = `https://map.kakao.com/link/to/${name},${flower.location.lat},${flower.location.lng}`;
-    if (window.FlowerBridge?.openExternal) {
-      window.FlowerBridge.openExternal(url);
-      return;
-    }
-    window.location.href = url;
+    navigateInApp(flower.location.lat, flower.location.lng, flower.name);
   }
 
   function updateBadge() {
@@ -749,6 +748,253 @@
       '"': '&quot;',
       "'": '&#039;'
     }[char]));
+  }
+
+  // ── Utility ──
+  function debounce(fn, delay) {
+    var timer = null;
+    return function () {
+      var args = arguments;
+      var ctx = this;
+      clearTimeout(timer);
+      timer = setTimeout(function () { fn.apply(ctx, args); }, delay);
+    };
+  }
+
+  // ── In-app walking route ──
+  async function navigateInApp(destLat, destLng, destName) {
+    closeBottomSheet();
+    if (!state.currentPosition) {
+      try {
+        await new Promise(function (resolve, reject) {
+          if (!navigator.geolocation) return reject(new Error('GPS 미지원'));
+          navigator.geolocation.getCurrentPosition(
+            function (pos) {
+              state.currentPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+              resolve();
+            },
+            function () { reject(new Error('위치 권한 거부')); },
+            { enableHighAccuracy: true, timeout: 8000 }
+          );
+        });
+      } catch (e) {
+        showRouteError('현재 위치를 확인할 수 없습니다. GPS를 켜주세요.');
+        return;
+      }
+    }
+    showRouteLoading(destName);
+    try {
+      var route = await fetchWalkingRoute(
+        state.currentPosition.lat, state.currentPosition.lng,
+        destLat, destLng
+      );
+      drawRouteOnMap(route.coordinates, state.currentPosition, { lat: destLat, lng: destLng });
+      state.routeSteps = route.steps || [];
+      showRoutePanel(route.distance, route.duration, destName, route.steps || []);
+    } catch (e) {
+      console.warn('[Route] error:', e);
+      showRouteError('경로를 찾을 수 없습니다.');
+    }
+  }
+
+  async function fetchWalkingRoute(startLat, startLng, endLat, endLng) {
+    var url = 'https://router.project-osrm.org/route/v1/foot/'
+      + startLng + ',' + startLat + ';'
+      + endLng + ',' + endLat
+      + '?overview=full&geometries=geojson&steps=true';
+    var res = await fetch(url);
+    if (!res.ok) throw new Error('API ' + res.status);
+    var data = await res.json();
+    if (!data.routes || data.routes.length === 0) throw new Error('경로 없음');
+    var route = data.routes[0];
+    var steps = [];
+    if (route.legs && route.legs.length > 0) {
+      route.legs.forEach(function (leg) {
+        if (leg.steps) {
+          leg.steps.forEach(function (step) {
+            if (step.maneuver && step.distance > 0) {
+              steps.push({
+                instruction: translateManeuver(step.maneuver.type, step.maneuver.modifier, step.name),
+                distance: step.distance,
+                duration: step.duration,
+                name: step.name || ''
+              });
+            }
+          });
+        }
+      });
+    }
+    return {
+      coordinates: route.geometry.coordinates,
+      distance: route.distance,
+      duration: route.duration,
+      steps: steps
+    };
+  }
+
+  function translateManeuver(type, modifier, name) {
+    var road = name ? ' (' + name + ')' : '';
+    var map = {
+      'depart': '출발',
+      'arrive': '도착',
+      'turn-left': '좌회전', 'turn-right': '우회전',
+      'turn-slight left': '살짝 좌회전', 'turn-slight right': '살짝 우회전',
+      'turn-sharp left': '크게 좌회전', 'turn-sharp right': '크게 우회전',
+      'continue-straight': '직진', 'continue-': '직진',
+      'fork-left': '왼쪽 갈림길', 'fork-right': '오른쪽 갈림길',
+      'roundabout-': '로타리 진입',
+      'end of road-left': '길 끝에서 좌회전', 'end of road-right': '길 끝에서 우회전',
+      'new name-': '길을 따라 이동'
+    };
+    var key = type + '-' + (modifier || '');
+    var label = map[key] || map[type + '-'] || type + (modifier ? ' ' + modifier : '');
+    return label + road;
+  }
+
+  function drawRouteOnMap(geojsonCoords, startPos, endPos) {
+    clearRoute();
+    if (!state.map || !state.kakaoReady) return;
+    var path = geojsonCoords.map(function (c) {
+      return new kakao.maps.LatLng(c[1], c[0]);
+    });
+    // 경로 외곽선 (두꺼운 흰색)
+    state.routePolyline = new kakao.maps.Polyline({
+      path: path,
+      strokeWeight: 7,
+      strokeColor: '#4285F4',
+      strokeOpacity: 0.9,
+      strokeStyle: 'solid'
+    });
+    state.routePolyline.setMap(state.map);
+    try {
+      // 출발 마커 (파란 원)
+      var startSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">'
+        + '<circle cx="16" cy="16" r="13" fill="#4285F4" stroke="white" stroke-width="3"/>'
+        + '<circle cx="16" cy="16" r="5" fill="white"/></svg>';
+      state.routeStartMarker = new kakao.maps.Marker({
+        position: new kakao.maps.LatLng(startPos.lat, startPos.lng),
+        image: new kakao.maps.MarkerImage(
+          'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(startSvg),
+          new kakao.maps.Size(32, 32),
+          { offset: new kakao.maps.Point(16, 16) }
+        )
+      });
+      state.routeStartMarker.setMap(state.map);
+      // 도착 마커 (빨간 핀)
+      var endSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44">'
+        + '<path d="M18 0C8.06 0 0 8.06 0 18c0 12.6 18 26 18 26s18-13.4 18-26C36 8.06 27.94 0 18 0z" fill="#EA4335"/>'
+        + '<circle cx="18" cy="16" r="7" fill="white"/></svg>';
+      state.routeEndMarker = new kakao.maps.Marker({
+        position: new kakao.maps.LatLng(endPos.lat, endPos.lng),
+        image: new kakao.maps.MarkerImage(
+          'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(endSvg),
+          new kakao.maps.Size(36, 44),
+          { offset: new kakao.maps.Point(18, 44) }
+        )
+      });
+      state.routeEndMarker.setMap(state.map);
+    } catch (e) { /* ignore */ }
+    var bounds = new kakao.maps.LatLngBounds();
+    path.forEach(function (p) { bounds.extend(p); });
+    state.map.setBounds(bounds);
+  }
+
+  function clearRoute() {
+    if (state.routePolyline) { state.routePolyline.setMap(null); state.routePolyline = null; }
+    if (state.routeStartMarker) { state.routeStartMarker.setMap(null); state.routeStartMarker = null; }
+    if (state.routeEndMarker) { state.routeEndMarker.setMap(null); state.routeEndMarker = null; }
+    state.routeSteps = [];
+    var panel = document.getElementById('route-panel');
+    if (panel) panel.remove();
+  }
+
+  function showRoutePanel(distM, durS, destName, steps) {
+    var old = document.getElementById('route-panel');
+    if (old) old.remove();
+    var dist = distM >= 1000 ? (distM / 1000).toFixed(1) + ' km' : Math.round(distM) + ' m';
+    var mins = Math.ceil(durS / 60);
+    var time = mins >= 60 ? Math.floor(mins / 60) + '시간 ' + (mins % 60) + '분' : mins + '분';
+    var panel = document.createElement('div');
+    panel.id = 'route-panel';
+    panel.className = 'route-panel';
+    // 상단 요약
+    var html = '<div class="route-panel-row">'
+      + '<span class="route-icon">🚶</span>'
+      + '<div class="route-info">'
+      + '  <strong>' + escapeHtml(destName) + '</strong>'
+      + '  <span>📏 ' + dist + ' &nbsp; ⏱ 도보 ' + time + '</span>'
+      + '</div>'
+      + '<button id="btn-toggle-steps" class="route-toggle">▼</button>'
+      + '<button id="btn-close-route" class="route-close">✕</button>'
+      + '</div>';
+    // 턴바이턴 안내 목록
+    if (steps && steps.length > 0) {
+      html += '<div id="route-steps" class="route-steps" style="display:none;">';
+      steps.forEach(function (s, i) {
+        var sDist = s.distance >= 1000 ? (s.distance / 1000).toFixed(1) + 'km' : Math.round(s.distance) + 'm';
+        var icon = getStepIcon(s.instruction);
+        html += '<div class="route-step">'
+          + '<span class="step-num">' + icon + '</span>'
+          + '<span class="step-text">' + escapeHtml(s.instruction) + '</span>'
+          + '<span class="step-dist">' + sDist + '</span>'
+          + '</div>';
+      });
+      html += '</div>';
+    }
+    panel.innerHTML = html;
+    document.getElementById('map-shell').appendChild(panel);
+    document.getElementById('btn-close-route').addEventListener('click', clearRoute);
+    var toggleBtn = document.getElementById('btn-toggle-steps');
+    if (toggleBtn && steps && steps.length > 0) {
+      toggleBtn.addEventListener('click', function () {
+        var stepsEl = document.getElementById('route-steps');
+        if (!stepsEl) return;
+        var hidden = stepsEl.style.display === 'none';
+        stepsEl.style.display = hidden ? 'block' : 'none';
+        toggleBtn.textContent = hidden ? '▲' : '▼';
+      });
+    }
+  }
+
+  function getStepIcon(instruction) {
+    if (instruction.indexOf('좌회전') >= 0) return '↰';
+    if (instruction.indexOf('우회전') >= 0) return '↱';
+    if (instruction.indexOf('직진') >= 0) return '↑';
+    if (instruction.indexOf('출발') >= 0) return '🏁';
+    if (instruction.indexOf('도착') >= 0) return '📍';
+    if (instruction.indexOf('갈림길') >= 0) return '⑂';
+    if (instruction.indexOf('로타리') >= 0) return '↻';
+    return '→';
+  }
+
+  function showRouteLoading(destName) {
+    var old = document.getElementById('route-panel');
+    if (old) old.remove();
+    var panel = document.createElement('div');
+    panel.id = 'route-panel';
+    panel.className = 'route-panel';
+    panel.innerHTML =
+      '<div class="route-panel-row">'
+      + '<span class="route-icon">⏳</span>'
+      + '<div class="route-info"><strong>' + escapeHtml(destName) + '</strong>'
+      + '<span>경로 검색 중...</span></div></div>';
+    document.getElementById('map-shell').appendChild(panel);
+  }
+
+  function showRouteError(msg) {
+    var old = document.getElementById('route-panel');
+    if (old) old.remove();
+    var panel = document.createElement('div');
+    panel.id = 'route-panel';
+    panel.className = 'route-panel route-error';
+    panel.innerHTML =
+      '<div class="route-panel-row">'
+      + '<span class="route-icon">⚠️</span>'
+      + '<div class="route-info"><span>' + escapeHtml(msg) + '</span></div>'
+      + '<button id="btn-close-route" class="route-close">✕</button>'
+      + '</div>';
+    document.getElementById('map-shell').appendChild(panel);
+    document.getElementById('btn-close-route').addEventListener('click', clearRoute);
   }
 
   document.addEventListener('DOMContentLoaded', init);
