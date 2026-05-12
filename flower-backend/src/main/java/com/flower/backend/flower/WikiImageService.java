@@ -40,7 +40,6 @@ public class WikiImageService {
     @Value("${storage.oracle.region}")
     private String region;
 
-    @Transactional
     public FetchResult fetchAndStoreImages() {
         List<FlowerBook> flowers = flowerBookRepository.findAll();
         int updated = 0, skipped = 0, failed = 0;
@@ -51,29 +50,20 @@ public class WikiImageService {
         for (FlowerBook flower : flowers) {
             try {
                 String thumbnailUrl = fetchWikiThumbnail(httpClient, flower.getName());
-                if (thumbnailUrl == null) {
-                    skipped++;
-                    continue;
-                }
+                if (thumbnailUrl == null) { skipped++; continue; }
 
                 byte[] imageBytes = downloadImage(httpClient, thumbnailUrl);
-                if (imageBytes == null) {
-                    skipped++;
-                    continue;
-                }
+                if (imageBytes == null) { skipped++; continue; }
 
                 String objectName = "flowers/" + flower.getId() + ".jpg";
                 uploadToOracle(storageClient, objectName, imageBytes);
-
                 String oracleUrl = String.format(
                         "https://objectstorage.%s.oraclecloud.com/n/%s/b/%s/o/%s",
                         region, namespace, bucket, objectName);
 
-                flower.updateImageUrl(oracleUrl);
-                flowerBookRepository.save(flower);
+                Thread.sleep(200); // API 부하 방지 (트랜잭션 밖)
+                updateFlowerImageUrl(flower.getId(), oracleUrl); // DB만 트랜잭션
                 updated++;
-
-                Thread.sleep(200);
                 log.info("이미지 저장 완료: {} ({})", flower.getName(), updated);
             } catch (Exception e) {
                 log.warn("이미지 처리 실패 - {}: {}", flower.getName(), e.getMessage());
@@ -101,6 +91,14 @@ public class WikiImageService {
         if (thumbnail.isMissingNode()) return null;
 
         return thumbnail.path("source").asText(null);
+    }
+
+    @Transactional
+    protected void updateFlowerImageUrl(Long flowerId, String imageUrl) {
+        flowerBookRepository.findById(flowerId).ifPresent(f -> {
+            f.updateImageUrl(imageUrl);
+            flowerBookRepository.save(f);
+        });
     }
 
     private byte[] downloadImage(HttpClient client, String imageUrl) throws Exception {

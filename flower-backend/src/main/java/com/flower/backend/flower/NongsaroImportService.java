@@ -26,7 +26,7 @@ public class NongsaroImportService {
     @Value("${nongsaro.api-key:}")
     private String apiKey;
 
-    @Transactional
+    // @Transactional 제거 — 외부 API 호출 중 커넥션 점유 방지
     public ImportResult importAll() {
         if (apiKey.isBlank()) {
             throw new RuntimeException("NONGSARO_API_KEY가 설정되지 않았습니다.");
@@ -35,7 +35,6 @@ public class NongsaroImportService {
         RestTemplate restTemplate = new RestTemplate();
         int saved = 0, skipped = 0;
 
-        // 12개월 전체 순회
         for (int month = 1; month <= 12; month++) {
             List<FlowerListItem> items = fetchList(restTemplate, month);
             log.info("{}월 꽃 목록: {}개", month, items.size());
@@ -47,28 +46,10 @@ public class NongsaroImportService {
                 }
 
                 try {
-                    FlowerDetailData detail = fetchDetail(restTemplate, item.dataNo);
-                    FlowerCategory category = matchCategory(item.flowNm);
-
-                    FlowerBook flower = FlowerBook.builder()
-                            .dataNo(item.dataNo)
-                            .name(item.flowNm)
-                            .scientificName(detail.sciNm)
-                            .bloomMonth(item.fMonth)
-                            .bloomDay(item.fDay)
-                            .flowerLanguage(detail.flowLang)
-                            .description(detail.fContent)
-                            .growTips(detail.fGrow)
-                            .imageUrl(detail.imgUrl)
-                            .category(category)
-                            .source("NONGSARO")
-                            .status("COMPLETE")
-                            .build();
-
-                    flowerRepository.save(flower);
+                    FlowerDetailData detail = fetchDetail(restTemplate, item.dataNo); // 외부 API
+                    Thread.sleep(100); // API 부하 방지 (트랜잭션 밖)
+                    saveFlower(item, detail); // DB 저장만 트랜잭션
                     saved++;
-
-                    Thread.sleep(100); // API 부하 방지
                 } catch (Exception e) {
                     log.warn("꽃 저장 실패 - dataNo={}, name={}: {}", item.dataNo, item.flowNm, e.getMessage());
                 }
@@ -93,6 +74,16 @@ public class NongsaroImportService {
             log.warn("{}월 목록 조회 실패: {}", month, e.getMessage());
             return List.of();
         }
+    }
+
+    @Transactional
+    protected void saveFlower(FlowerListItem item, FlowerDetailData detail) {
+        FlowerCategory category = matchCategory(item.flowNm);
+        flowerRepository.save(FlowerBook.builder()
+                .dataNo(item.dataNo).name(item.flowNm).scientificName(detail.sciNm)
+                .bloomMonth(item.fMonth).bloomDay(item.fDay).flowerLanguage(detail.flowLang)
+                .description(detail.fContent).growTips(detail.fGrow).imageUrl(detail.imgUrl)
+                .category(category).source("NONGSARO").status("COMPLETE").build());
     }
 
     private FlowerDetailData fetchDetail(RestTemplate restTemplate, String dataNo) {

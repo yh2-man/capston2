@@ -40,7 +40,6 @@ public class NongsaroImageService {
     @Value("${storage.oracle.region}")
     private String region;
 
-    @Transactional
     public CompressResult compressAndStore() {
         // Oracle Storage URL이 아닌 꽃만 처리
         List<FlowerBook> targets = flowerBookRepository.findAll().stream()
@@ -73,15 +72,13 @@ public class NongsaroImageService {
                         "https://objectstorage.%s.oraclecloud.com/n/%s/b/%s/o/%s",
                         region, namespace, bucket, objectName);
 
-                flower.updateImageUrl(oracleUrl);
-                flowerBookRepository.save(flower);
+                Thread.sleep(150); // API 부하 방지 (트랜잭션 밖)
+                saveFlowerImageUrl(flower.getId(), oracleUrl); // DB만 트랜잭션
                 updated++;
 
                 int originalKb = original.length / 1024;
                 int compressedKb = compressed.length / 1024;
                 log.info("압축 완료: {} ({}KB → {}KB, {}번)", flower.getName(), originalKb, compressedKb, updated);
-
-                Thread.sleep(150);
             } catch (Exception e) {
                 log.warn("이미지 처리 실패 - {}: {}", flower.getName(), e.getMessage());
                 failed++;
@@ -91,6 +88,14 @@ public class NongsaroImageService {
         log.info("농사로 이미지 압축 완료 - 업데이트: {}, 건너뜀: {}, 실패: {}", updated, skipped, failed);
         return new CompressResult(updated, skipped, failed);
         } // try-with-resources: storageClient 자동 종료
+    }
+
+    @Transactional
+    protected void saveFlowerImageUrl(Long flowerId, String imageUrl) {
+        flowerBookRepository.findById(flowerId).ifPresent(f -> {
+            f.updateImageUrl(imageUrl);
+            flowerBookRepository.save(f);
+        });
     }
 
     private byte[] downloadImage(HttpClient client, String imageUrl) throws Exception {
