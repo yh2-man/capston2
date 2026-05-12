@@ -1,6 +1,13 @@
 -- ================================================================
 -- OurT 꽃 도감 테이블 (Supabase SQL Editor에서 실행)
+-- 초기화 후 재실행 시: DROP 먼저 실행 후 나머지 실행
 -- ================================================================
+
+-- ── 초기화 (순서 중요 — 참조 테이블부터) ────────────────────────
+DROP TABLE IF EXISTS flower_species_mapping;
+DROP TABLE IF EXISTS flower_book;
+DROP TABLE IF EXISTS flowers;
+DROP TABLE IF EXISTS flower_categories;
 
 -- ── 포괄 카테고리 (속/종 기준으로 묶음) ──────────────────────
 CREATE TABLE IF NOT EXISTS flower_categories (
