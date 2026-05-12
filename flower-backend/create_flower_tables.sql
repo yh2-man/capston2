@@ -70,6 +70,8 @@ CREATE TABLE IF NOT EXISTS flower_book (
     grow_tips        TEXT,
     image_url        VARCHAR(1024),
     category_id      BIGINT REFERENCES flower_categories(id),
+    source           VARCHAR(20) NOT NULL DEFAULT 'NONGSARO', -- NONGSARO | WIKIPEDIA | MANUAL
+    status           VARCHAR(20) NOT NULL DEFAULT 'COMPLETE', -- COMPLETE | AUTO | PENDING
     created_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

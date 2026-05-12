@@ -45,4 +45,18 @@ public class FlowerBook {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private FlowerCategory category;
+
+    // 데이터 출처: NONGSARO | WIKIPEDIA | MANUAL
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private String source = "NONGSARO";
+
+    // 데이터 완성도: COMPLETE | AUTO | PENDING
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private String status = "COMPLETE";
+
+    public void updateStatus(String status) {
+        this.status = status;
+    }
 }

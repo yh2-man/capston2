@@ -38,3 +38,6 @@ storage:
 chatbot:
   openai:
     api-key: ${OPENAI_API_KEY:}
+
+nongsaro:
+  api-key: ${NONGSARO_API_KEY:}
