@@ -203,6 +203,7 @@ class _FlowerBookPageState extends State<FlowerBookPage> {
                     ? ClipRRect(
                         borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
                         child: Image.network(flower.imageUrl!, fit: BoxFit.cover,
+                          cacheWidth: 300, filterQuality: FilterQuality.medium,
                           errorBuilder: (_, __, ___) => Center(child: Text(emoji, style: const TextStyle(fontSize: 32)))))
                     : Center(child: Text(emoji, style: const TextStyle(fontSize: 32))),
               ),
@@ -324,6 +325,7 @@ class _FlowerDetailSheetState extends State<_FlowerDetailSheet> {
             child: imageUrl != null && imageUrl.isNotEmpty
                 ? ClipRRect(borderRadius: BorderRadius.circular(20),
                     child: Image.network(imageUrl, fit: BoxFit.cover,
+                      cacheWidth: 800, filterQuality: FilterQuality.medium,
                       errorBuilder: (_, __, ___) => Center(child: Text(emoji, style: const TextStyle(fontSize: 72)))))
                 : Center(child: Text(emoji, style: const TextStyle(fontSize: 72))),
           ),

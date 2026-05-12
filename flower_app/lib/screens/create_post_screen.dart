@@ -142,7 +142,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 child: _selectedImage != null
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: Image.file(_selectedImage!, fit: BoxFit.cover),
+                        child: Image.file(_selectedImage!, fit: BoxFit.cover,
+                            cacheWidth: 1080, filterQuality: FilterQuality.medium),
                       )
                     : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
