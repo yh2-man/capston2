@@ -17,6 +17,9 @@ public class FlowerImportController {
     @Autowired(required = false)
     private WikiImageService wikiImageService;
 
+    @Autowired(required = false)
+    private NongsaroImageService nongsaroImageService;
+
     @PostMapping("/import")
     public ApiResponse<NongsaroImportService.ImportResult> importFromNongsaro() {
         return ApiResponse.ok(importService.importAll());
@@ -24,9 +27,13 @@ public class FlowerImportController {
 
     @PostMapping("/fetch-images")
     public ApiResponse<?> fetchImages() {
-        if (wikiImageService == null) {
-            return ApiResponse.ok("로컬 환경에서는 지원되지 않습니다.");
-        }
+        if (wikiImageService == null) return ApiResponse.ok("로컬 환경에서는 지원되지 않습니다.");
         return ApiResponse.ok(wikiImageService.fetchAndStoreImages());
+    }
+
+    @PostMapping("/compress-images")
+    public ApiResponse<?> compressImages() {
+        if (nongsaroImageService == null) return ApiResponse.ok("로컬 환경에서는 지원되지 않습니다.");
+        return ApiResponse.ok(nongsaroImageService.compressAndStore());
     }
 }

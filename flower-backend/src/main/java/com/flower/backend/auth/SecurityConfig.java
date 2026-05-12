@@ -59,6 +59,7 @@ public class SecurityConfig {
                     "/api/v1/flowers/**",
                     "/api/v1/admin/flowers/import",
                     "/api/v1/admin/flowers/fetch-images",
+                    "/api/v1/admin/flowers/compress-images",
                     "/error"
                 ).permitAll()
                 .anyRequest().authenticated()
