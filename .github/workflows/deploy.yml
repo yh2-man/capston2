@@ -5,6 +5,7 @@ on:
     branches: [ main, feature/app-ui ]
     paths:
       - 'flower-backend/**'
+      - 'flower_app/assets/map/**'
 
 jobs:
   deploy:
