@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../app_actions/app_action_runtime.dart';
+import '../services/chatbot_service.dart';
+import '../services/community_api_service.dart';
 import '../theme/season_theme.dart';
-import 'kakao_map_screen.dart';
-import 'chatbot_screen.dart';
-import 'community_screen.dart';
-import 'flower_book_screen.dart';
-import 'walk_screen.dart';
-import 'saved_screen.dart';
+import '../widgets/app_bottom_navigation.dart';
+import '../widgets/chat_floating_button.dart';
+import 'flower_book_page.dart';
+import 'pedometer_screen.dart';
+import 'saved_page.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -15,14 +19,41 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  final GlobalKey<KakaoMapScreenState> _mapKey = GlobalKey<KakaoMapScreenState>();
-  final TextEditingController _mapSearchController = TextEditingController();
-  bool _isMapMode = false;
+  static const _festivalAspectRatio = 1200 / 628;
+
+  final PageController _festivalPageController = PageController(viewportFraction: 0.92);
+  final TextEditingController _chatController = TextEditingController();
+  final ChatbotService _chatbotService = ChatbotService();
+  final String _chatSessionId = DateTime.now().microsecondsSinceEpoch.toString();
+  List<CommunityPost> _posts = [];
+  final List<_MainChatMessage> _chatMessages = [];
+  bool _isLoadingPosts = true;
+  bool _isChatRunning = false;
+  int _festivalIndex = 0;
+  String? _chatStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPosts();
+  }
 
   @override
   void dispose() {
-    _mapSearchController.dispose();
+    _festivalPageController.dispose();
+    _chatController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadPosts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('accessToken') ?? '';
+    final posts = await CommunityApiService.getPosts(token);
+    if (!mounted) return;
+    setState(() {
+      _posts = posts.take(5).toList();
+      _isLoadingPosts = false;
+    });
   }
 
   @override
@@ -30,254 +61,370 @@ class _MainScreenState extends State<MainScreen> {
     final colors = SeasonTheme.getColors();
 
     return Scaffold(
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: KakaoMapScreen(key: _mapKey, isEmbedded: true),
+      backgroundColor: colors.background,
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _loadPosts,
+          color: colors.primary,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
+            children: [
+              _buildTopBar(colors),
+              const SizedBox(height: 16),
+              _buildMainChatComposer(colors),
+              const SizedBox(height: 14),
+              _buildShortcutButtons(colors),
+              const SizedBox(height: 18),
+              _buildFestivalSection(context, colors),
+              const SizedBox(height: 20),
+              _sectionTitle('올라온 게시물', colors),
+              _buildPostPreviewStrip(colors),
+              const SizedBox(height: 20),
+              _sectionTitle('산책 요약', colors),
+              _buildWalkSummary(colors),
+            ],
           ),
-          if (!_isMapMode)
-            Positioned(
-              top: 106,
-              left: 10,
-              right: 10,
-              bottom: 240,
-              child: Listener(
-                behavior: HitTestBehavior.translucent,
-                onPointerDown: (_) => _showMapMode(),
-              ),
-            ),
-          if (!_isMapMode) _buildTopBar(context, colors),
-          if (_isMapMode) _buildMapModeTopBar(colors),
-          if (_isMapMode) _buildMapModeControls(colors),
-          if (!_isMapMode) _buildFloatingMenu(context, colors),
+        ),
+      ),
+      floatingActionButton: const ChatFloatingButton(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      bottomNavigationBar: const AppBottomNavigation(currentTab: AppNavTab.home),
+    );
+  }
+
+  Widget _buildTopBar(SeasonColors colors) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: colors.primary.withValues(alpha: 0.15),
+            child: Icon(Icons.person, color: colors.primary, size: 20),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('산책중인 사용자', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              Text('${colors.name} 탐험가', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  void _showMapMode() {
-    if (_isMapMode) return;
-    setState(() => _isMapMode = true);
+  Widget _buildMainChatComposer(SeasonColors colors) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_chatStatus != null) ...[_buildChatStatus(colors), const SizedBox(height: 8)],
+        _buildChatEntry(colors),
+      ],
+    );
   }
 
-  void _showMainMode() {
-    if (!_isMapMode) return;
-    setState(() => _isMapMode = false);
-  }
-
-  Future<void> _submitMapSearch(String value) async {
-    await _mapKey.currentState?.setSearchQuery(value.trim());
-  }
-
-  Future<void> _zoomMapIn() async => _mapKey.currentState?.zoomIn();
-  Future<void> _zoomMapOut() async => _mapKey.currentState?.zoomOut();
-  Future<void> _moveToCurrentLocation() async => _mapKey.currentState?.moveToCurrentLocation();
-
-  Widget _buildTopBar(BuildContext context, SeasonColors colors) {
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: SafeArea(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.88),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 3))],
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: colors.primary.withOpacity(0.15),
-                child: Icon(Icons.person, color: colors.primary, size: 20),
+  Widget _buildChatEntry(SeasonColors colors) {
+    return Container(
+      height: 52,
+      padding: const EdgeInsets.only(left: 14, right: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.14)),
+        boxShadow: [BoxShadow(color: colors.primary.withValues(alpha: 0.10), blurRadius: 10, offset: const Offset(0, 3))],
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.chat_bubble_outline, color: colors.primary, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: _chatController,
+              enabled: !_isChatRunning,
+              textInputAction: TextInputAction.send,
+              decoration: InputDecoration(
+                hintText: _isChatRunning ? '챗봇이 작업 중입니다' : '챗봇에게 물어보기',
+                border: InputBorder.none,
+                isDense: true,
               ),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('산책중인 사용자', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  Text('${SeasonTheme.getColors().name} 탐험가', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-                ],
-              ),
-              const Spacer(),
-              IconButton(icon: Icon(Icons.search, color: colors.primary), onPressed: _showMapMode),
-              IconButton(icon: Icon(Icons.menu, color: colors.primary), onPressed: () {}),
-            ],
+              onSubmitted: _sendMainChatMessage,
+            ),
           ),
-        ),
+          IconButton(
+            icon: Icon(Icons.send_rounded, color: colors.primary, size: 21),
+            onPressed: _isChatRunning ? null : () => _sendMainChatMessage(_chatController.text),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildMapModeTopBar(SeasonColors colors) {
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: SafeArea(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.88),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 3))],
+  Widget _buildChatStatus(SeasonColors colors) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.86),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.10)),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 16, height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2, color: colors.primary),
           ),
-          child: Row(
-            children: [
-              IconButton(
-                icon: Icon(Icons.arrow_back_ios_new, color: colors.primary, size: 18),
-                tooltip: '메인 모드',
-                onPressed: _showMainMode,
-              ),
-              Expanded(
-                child: TextField(
-                  controller: _mapSearchController,
-                  textInputAction: TextInputAction.search,
-                  decoration: const InputDecoration(
-                    hintText: '꽃 이름, 종류, 주소',
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(_chatStatus ?? '', maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: colors.primary, fontSize: 13, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _sendMainChatMessage(String rawText) async {
+    final text = rawText.trim();
+    if (text.isEmpty || _isChatRunning) return;
+
+    _chatController.clear();
+    FocusScope.of(context).unfocus();
+
+    setState(() {
+      _chatMessages.add(_MainChatMessage.user(text));
+      _isChatRunning = true;
+      _chatStatus = '요청을 분석하는 중입니다';
+    });
+
+    Future.delayed(const Duration(milliseconds: 700), () {
+      if (!mounted || !_isChatRunning) return;
+      setState(() => _chatStatus = '챗봇이 답변을 준비하는 중입니다');
+    });
+
+    try {
+      final response = await _chatbotService.sendMessage(
+        message: text, sessionId: _chatSessionId, lat: 37.5665, lng: 126.9780,
+      );
+      if (!mounted) return;
+      setState(() {
+        _chatMessages.add(_MainChatMessage.bot(response.reply));
+        _isChatRunning = false;
+        _chatStatus = null;
+      });
+      if (mounted) await AppActionRuntime.execute(context, response.actions);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _chatMessages.add(_MainChatMessage.bot('응답을 가져오지 못했습니다.'));
+        _isChatRunning = false;
+        _chatStatus = null;
+      });
+    }
+  }
+
+  Widget _buildShortcutButtons(SeasonColors colors) {
+    final items = [
+      _HomeMenuItem(Icons.menu_book_outlined, '도감', () => _goTo(context, const FlowerBookPage())),
+      _HomeMenuItem(Icons.directions_walk, '만보기', () => _goTo(context, const PedometerScreen())),
+      _HomeMenuItem(Icons.bookmark_outline, '저장', () => _goTo(context, const SavedPage())),
+    ];
+
+    return Row(
+      children: [
+        for (final item in items) ...[
+          Expanded(
+            child: Tooltip(
+              message: item.label,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: item.onTap,
+                child: Ink(
+                  height: 62,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: colors.primary.withValues(alpha: 0.12)),
+                    boxShadow: [BoxShadow(color: colors.primary.withValues(alpha: 0.10), blurRadius: 10, offset: const Offset(0, 3))],
                   ),
-                  onSubmitted: _submitMapSearch,
+                  child: Icon(item.icon, color: colors.primary, size: 28),
                 ),
               ),
-              IconButton(
-                icon: Icon(Icons.search, color: colors.primary),
-                tooltip: '검색',
-                onPressed: () => _submitMapSearch(_mapSearchController.text),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMapModeControls(SeasonColors colors) {
-    return Positioned(
-      top: 100,
-      right: 16,
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _mapControlButton(colors: colors, icon: Icons.add, tooltip: '확대', onTap: _zoomMapIn),
-            const SizedBox(height: 8),
-            _mapControlButton(colors: colors, icon: Icons.remove, tooltip: '축소', onTap: _zoomMapOut),
-            const SizedBox(height: 8),
-            _mapControlButton(colors: colors, icon: Icons.my_location, tooltip: '현재 위치', onTap: _moveToCurrentLocation),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _mapControlButton({
-    required SeasonColors colors,
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback onTap,
-  }) {
-    return Tooltip(
-      message: tooltip,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.92),
-            shape: BoxShape.circle,
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 8)],
-          ),
-          child: Icon(icon, color: colors.primary, size: 22),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFloatingMenu(BuildContext context, SeasonColors colors) {
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: SafeArea(
-        child: SizedBox(
-          height: 230,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              _positioned(dx: -95, dy: -80,
-                child: _subBtn(context, icon: Icons.people_alt_outlined, label: '커뮤니티', colors: colors,
-                  onTap: () => _goTo(context, const CommunityScreen()))),
-              _positioned(dx: 95, dy: -80,
-                child: _subBtn(context, icon: Icons.menu_book_outlined, label: '꽃 도감', colors: colors,
-                  onTap: () => _goTo(context, const FlowerBookScreen()))),
-              _positioned(dx: -95, dy: 80,
-                child: _subBtn(context, icon: Icons.directions_walk, label: '산책 기록', colors: colors,
-                  onTap: () => _goTo(context, const WalkScreen()))),
-              _positioned(dx: 95, dy: 80,
-                child: _subBtn(context, icon: Icons.bookmark_outline, label: '저장됨', colors: colors,
-                  onTap: () => _goTo(context, const SavedScreen()))),
-              _buildChatbotButton(context, colors),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _positioned({required double dx, required double dy, required Widget child}) =>
-      Transform.translate(offset: Offset(dx, dy), child: child);
-
-  Widget _subBtn(BuildContext context, {
-    required IconData icon, required String label,
-    required SeasonColors colors, required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 52, height: 52,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle, color: Colors.white,
-              boxShadow: [BoxShadow(color: colors.primary.withOpacity(0.25), blurRadius: 10, spreadRadius: 1)],
             ),
-            child: Icon(icon, color: colors.primary, size: 24),
           ),
+          if (item != items.last) const SizedBox(width: 10),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildFestivalSection(BuildContext context, SeasonColors colors) {
+    final banners = [
+      const _FestivalBanner(title: '이번 주 주변 꽃 축제', description: '근처에서 열리는 꽃 축제를 확인해보세요',
+          colors: [Color(0xFFFFB7C5), Color(0xFFFFF0A6), Color(0xFF98D9A4)]),
+      const _FestivalBanner(title: '주말 산책 추천', description: '지금 가기 좋은 꽃길을 찾아보세요',
+          colors: [Color(0xFFBEE3F8), Color(0xFFC6F6D5), Color(0xFFFFE4E6)]),
+      const _FestivalBanner(title: '인기 꽃 스팟', description: '사용자들이 많이 찾는 장소',
+          colors: [Color(0xFFFBCFE8), Color(0xFFDDD6FE), Color(0xFFBFDBFE)]),
+    ];
+    final bannerHeight = (MediaQuery.sizeOf(context).width * 0.92) / _festivalAspectRatio;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: bannerHeight,
+          child: PageView.builder(
+            controller: _festivalPageController,
+            padEnds: true,
+            itemCount: banners.length,
+            onPageChanged: (index) => setState(() => _festivalIndex = index),
+            itemBuilder: (context, index) => _buildFestivalImage(banners[index]),
+          ),
+        ),
+        const SizedBox(height: 10),
+        _buildFestivalDescription(colors, banners[_festivalIndex]),
+      ],
+    );
+  }
+
+  Widget _buildFestivalImage(_FestivalBanner banner) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: banner.colors),
+          ),
+        ),
+        Positioned(
+          right: 22, bottom: 14,
+          child: Icon(Icons.local_florist, color: Colors.white.withValues(alpha: 0.78), size: 92),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFestivalDescription(SeasonColors colors, _FestivalBanner banner) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      color: Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(banner.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
           const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.88), borderRadius: BorderRadius.circular(8)),
-            child: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: colors.primary)),
-          ),
+          Text(banner.description, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
         ],
       ),
     );
   }
 
-  Widget _buildChatbotButton(BuildContext context, SeasonColors colors) {
-    return GestureDetector(
-      onTap: () => _goTo(context, const ChatbotScreen()),
-      child: Container(
-        width: 72, height: 72,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle, color: colors.primary,
-          boxShadow: [BoxShadow(color: colors.primary.withOpacity(0.45), blurRadius: 20, spreadRadius: 4)],
-        ),
-        child: const Icon(Icons.smart_toy_outlined, color: Colors.white, size: 32),
+  Widget _sectionTitle(String text, SeasonColors colors) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Text(text, style: TextStyle(color: colors.primary, fontSize: 16, fontWeight: FontWeight.w800)),
+    );
+  }
+
+  Widget _buildPostPreviewStrip(SeasonColors colors) {
+    if (_isLoadingPosts) {
+      return SizedBox(height: 96, child: Center(child: CircularProgressIndicator(color: colors.primary)));
+    }
+    if (_posts.isEmpty) {
+      return Container(
+        height: 86, alignment: Alignment.center,
+        decoration: _panelDecoration(colors),
+        child: Text('표시할 게시물이 없습니다', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+      );
+    }
+    return SizedBox(
+      height: 104,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _posts.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final post = _posts[index];
+          return Container(
+            width: 132,
+            decoration: _panelDecoration(colors),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: post.imageUrl == null || post.imageUrl!.isEmpty
+                      ? Container(width: double.infinity, color: colors.primary.withValues(alpha: 0.12),
+                          child: Icon(Icons.article_outlined, color: colors.primary))
+                      : Image.network(post.imageUrl!, width: double.infinity, fit: BoxFit.cover,
+                          errorBuilder: (c, e, s) => Container(width: double.infinity,
+                              color: colors.primary.withValues(alpha: 0.12),
+                              child: Icon(Icons.article_outlined, color: colors.primary))),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(9, 6, 9, 7),
+                  child: Text(post.content, maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  void _goTo(BuildContext context, Widget screen) =>
-      Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  Widget _buildWalkSummary(SeasonColors colors) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: _panelDecoration(colors),
+      child: Row(
+        children: [
+          Icon(Icons.directions_walk, color: colors.primary, size: 28),
+          const SizedBox(width: 12),
+          const Expanded(child: Text('오늘 산책, 퀘스트, 포인트 요약 영역', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700))),
+        ],
+      ),
+    );
+  }
+
+  BoxDecoration _panelDecoration(SeasonColors colors) {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      boxShadow: [BoxShadow(color: colors.primary.withValues(alpha: 0.10), blurRadius: 10, offset: const Offset(0, 3))],
+    );
+  }
+
+  void _goTo(BuildContext context, Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  }
+}
+
+class _HomeMenuItem {
+  const _HomeMenuItem(this.icon, this.label, this.onTap);
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+}
+
+class _FestivalBanner {
+  const _FestivalBanner({required this.title, required this.description, required this.colors});
+  final String title;
+  final String description;
+  final List<Color> colors;
+}
+
+class _MainChatMessage {
+  const _MainChatMessage._({required this.text, required this.isUser});
+  factory _MainChatMessage.user(String text) => _MainChatMessage._(text: text, isUser: true);
+  factory _MainChatMessage.bot(String text) => _MainChatMessage._(text: text, isUser: false);
+  final String text;
+  final bool isUser;
 }
