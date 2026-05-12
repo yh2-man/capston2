@@ -77,7 +77,7 @@ class CommunityApiService {
         final posts = data['posts'] as List;
         return posts.map((e) => CommunityPost.fromJson(e as Map<String, dynamic>)).toList();
       }
-    } catch (_) {}
+    } catch (e) { debugPrint('[API Error] $e'); }
     return [];
   }
 
@@ -109,7 +109,7 @@ class CommunityApiService {
         final body = jsonDecode(response.body);
         return CommunityPost.fromJson(body['data'] as Map<String, dynamic>);
       }
-    } catch (_) {}
+    } catch (e) { debugPrint('[API Error] $e'); }
     return null;
   }
 
@@ -123,7 +123,7 @@ class CommunityApiService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body)['data'] as Map<String, dynamic>;
       }
-    } catch (_) {}
+    } catch (e) { debugPrint('[API Error] $e'); }
     return {};
   }
 
@@ -137,7 +137,7 @@ class CommunityApiService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body)['data'] as Map<String, dynamic>;
       }
-    } catch (_) {}
+    } catch (e) { debugPrint('[API Error] $e'); }
     return {};
   }
 

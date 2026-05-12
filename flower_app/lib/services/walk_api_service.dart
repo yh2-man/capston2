@@ -38,7 +38,7 @@ class WalkApiService {
         final data = body['data'] as List;
         return data.map((e) => WalkRecord.fromJson(e as Map<String, dynamic>)).toList();
       }
-    } catch (_) {}
+    } catch (e) { debugPrint('[API Error] $e'); }
     return [];
   }
 
@@ -53,7 +53,7 @@ class WalkApiService {
         final body = jsonDecode(response.body);
         return body['data']['balance'] as int? ?? 0;
       }
-    } catch (_) {}
+    } catch (e) { debugPrint('[API Error] $e'); }
     return 0;
   }
 
@@ -64,7 +64,7 @@ class WalkApiService {
         headers: {'Authorization': 'Bearer $accessToken', 'Content-Type': 'application/json'},
         body: jsonEncode({'stepCount': steps}),
       ).timeout(const Duration(seconds: 10));
-    } catch (_) {}
+    } catch (e) { debugPrint('[API Error] $e'); }
   }
 
 }

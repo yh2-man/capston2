@@ -68,7 +68,7 @@ class SavedApiService {
         final data = body['data'] as List;
         return data.map((e) => SavedPostItem.fromJson(e as Map<String, dynamic>)).toList();
       }
-    } catch (_) {}
+    } catch (e) { debugPrint('[API Error] $e'); }
     return [];
   }
 
@@ -84,7 +84,7 @@ class SavedApiService {
         final data = body['data'] as List;
         return data.map((e) => SavedSpotItem.fromJson(e as Map<String, dynamic>)).toList();
       }
-    } catch (_) {}
+    } catch (e) { debugPrint('[API Error] $e'); }
     return [];
   }
 
@@ -94,7 +94,7 @@ class SavedApiService {
         Uri.parse('${ApiConfig.backendBaseUrl()}/api/v1/saved/posts/$postId'),
         headers: {'Authorization': 'Bearer $accessToken'},
       ).timeout(const Duration(seconds: 5));
-    } catch (_) {}
+    } catch (e) { debugPrint('[API Error] $e'); }
   }
 
   static Future<void> unsaveSpot(String accessToken, int spotId) async {
@@ -103,7 +103,7 @@ class SavedApiService {
         Uri.parse('${ApiConfig.backendBaseUrl()}/api/v1/saved/spots/$spotId'),
         headers: {'Authorization': 'Bearer $accessToken'},
       ).timeout(const Duration(seconds: 5));
-    } catch (_) {}
+    } catch (e) { debugPrint('[API Error] $e'); }
   }
 
 }
