@@ -19,9 +19,9 @@ public interface FlowerBookRepository extends JpaRepository<FlowerBook, Long> {
     List<FlowerBook> findByCategoryId(@Param("categoryId") Long categoryId);
 
     @Query("""
-        SELECT f FROM FlowerBook f
+        SELECT f FROM FlowerBook f LEFT JOIN f.category c
         WHERE f.name LIKE %:keyword%
-           OR f.category.name LIKE %:keyword%
+           OR c.name LIKE %:keyword%
         ORDER BY f.bloomMonth, f.bloomDay
     """)
     List<FlowerBook> searchByKeyword(@Param("keyword") String keyword);
