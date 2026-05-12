@@ -14,6 +14,7 @@ class CommunityFeedScreen extends StatefulWidget {
 class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
   List<CommunityPost> _posts = [];
   bool _isLoading = true;
+  String? _error;
   String _accessToken = '';
 
   @override
@@ -23,10 +24,15 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
   }
 
   Future<void> _loadPosts() async {
-    final prefs = await SharedPreferences.getInstance();
-    _accessToken = prefs.getString('accessToken') ?? '';
-    final posts = await CommunityApiService.getPosts(_accessToken);
-    if (mounted) setState(() { _posts = posts; _isLoading = false; });
+    if (mounted) setState(() { _isLoading = true; _error = null; });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _accessToken = prefs.getString('accessToken') ?? '';
+      final posts = await CommunityApiService.getPosts(_accessToken);
+      if (mounted) setState(() { _posts = posts; _isLoading = false; });
+    } catch (e) {
+      if (mounted) setState(() { _isLoading = false; _error = '게시글을 불러오지 못했습니다.'; });
+    }
   }
 
   Future<void> _openCreatePost() async {
@@ -39,16 +45,24 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
 
   Future<void> _toggleLike(int index) async {
     final post = _posts[index];
-    setState(() {
-      post.liked = !post.liked;
-    });
-    await CommunityApiService.toggleLike(_accessToken, post.id);
+    final original = post.liked;
+    setState(() => post.liked = !post.liked);
+    try {
+      await CommunityApiService.toggleLike(_accessToken, post.id);
+    } catch (_) {
+      if (mounted) setState(() => post.liked = original);
+    }
   }
 
   Future<void> _toggleSave(int index) async {
     final post = _posts[index];
+    final original = post.saved;
     setState(() => post.saved = !post.saved);
-    await CommunityApiService.toggleSave(_accessToken, post.id);
+    try {
+      await CommunityApiService.toggleSave(_accessToken, post.id);
+    } catch (_) {
+      if (mounted) setState(() => post.saved = original);
+    }
   }
 
   @override
@@ -73,6 +87,16 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: colors.primary))
+          : _error != null
+              ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(Icons.cloud_off, size: 48, color: Colors.grey[400]),
+                  const SizedBox(height: 12),
+                  Text(_error!, style: TextStyle(color: Colors.grey[500])),
+                  const SizedBox(height: 8),
+                  ElevatedButton(onPressed: _loadPosts,
+                    style: ElevatedButton.styleFrom(backgroundColor: colors.primary),
+                    child: const Text('다시 시도', style: TextStyle(color: Colors.white))),
+                ]))
           : RefreshIndicator(
               onRefresh: _loadPosts,
               child: _posts.isEmpty
