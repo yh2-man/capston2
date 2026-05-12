@@ -14,26 +14,34 @@ class AppActionRuntime {
     BuildContext context,
     List<ChatAction> actions,
   ) async {
-    final mapActions = actions.where(_isMapAction).toList();
-    if (mapActions.isNotEmpty) {
-      await _push(context, KakaoMapScreen(initialActions: mapActions));
-      return;
+    try {
+      final mapActions = actions.where(_isMapAction).toList();
+      if (mapActions.isNotEmpty) {
+        await _push(context, KakaoMapScreen(initialActions: mapActions));
+        return;
+      }
+
+      final screenActions = actions.where(_isScreenAction).toList();
+      final action = screenActions.isEmpty ? null : screenActions.first;
+      if (action == null) return;
+
+      final screen = _screenFor(action);
+      if (screen == null) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${action.target ?? action.type} 화면은 아직 준비 중입니다.')),
+        );
+        return;
+      }
+
+      await _push(context, screen);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('화면 이동에 실패했습니다.')),
+        );
+      }
     }
-
-    final screenActions = actions.where(_isScreenAction).toList();
-    final action = screenActions.isEmpty ? null : screenActions.first;
-    if (action == null) return;
-
-    final screen = _screenFor(action);
-    if (screen == null) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${action.target ?? action.type} 화면은 아직 준비 중입니다.')),
-      );
-      return;
-    }
-
-    await _push(context, screen);
   }
 
   static Future<void> _push(BuildContext context, Widget screen) async {
