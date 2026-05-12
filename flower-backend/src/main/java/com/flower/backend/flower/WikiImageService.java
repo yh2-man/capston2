@@ -45,7 +45,7 @@ public class WikiImageService {
         List<FlowerBook> flowers = flowerBookRepository.findAll();
         int updated = 0, skipped = 0, failed = 0;
 
-        ObjectStorageClient storageClient = buildStorageClient();
+        try (ObjectStorageClient storageClient = buildStorageClient()) {
         HttpClient httpClient = HttpClient.newHttpClient();
 
         for (FlowerBook flower : flowers) {
@@ -83,6 +83,7 @@ public class WikiImageService {
 
         log.info("위키 이미지 수집 완료 - 업데이트: {}, 건너뜀: {}, 실패: {}", updated, skipped, failed);
         return new FetchResult(updated, skipped, failed);
+        } // try-with-resources: storageClient 자동 종료
     }
 
     private String fetchWikiThumbnail(HttpClient client, String flowerName) throws Exception {

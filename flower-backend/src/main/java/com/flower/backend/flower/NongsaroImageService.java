@@ -51,7 +51,7 @@ public class NongsaroImageService {
         log.info("농사로 이미지 압축 대상: {}개", targets.size());
 
         int updated = 0, skipped = 0, failed = 0;
-        ObjectStorageClient storageClient = buildStorageClient();
+        try (ObjectStorageClient storageClient = buildStorageClient()) {
         HttpClient httpClient = HttpClient.newHttpClient();
 
         for (FlowerBook flower : targets) {
@@ -90,6 +90,7 @@ public class NongsaroImageService {
 
         log.info("농사로 이미지 압축 완료 - 업데이트: {}, 건너뜀: {}, 실패: {}", updated, skipped, failed);
         return new CompressResult(updated, skipped, failed);
+        } // try-with-resources: storageClient 자동 종료
     }
 
     private byte[] downloadImage(HttpClient client, String imageUrl) throws Exception {
