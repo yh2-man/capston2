@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/season_theme.dart';
-import '../services/flower_api_service.dart';
+import '../services/flower_book_api_service.dart';
 
 class FlowerBookPage extends StatefulWidget {
   const FlowerBookPage({super.key});
@@ -10,38 +10,12 @@ class FlowerBookPage extends StatefulWidget {
 }
 
 class _FlowerBookPageState extends State<FlowerBookPage> {
-  final FlowerApiService _api = FlowerApiService();
-  List<FlowerData> _flowers = [];
+  List<FlowerBookItem> _flowers = [];
   bool _isLoading = true;
   String? _error;
   int _selectedMonth = DateTime.now().month;
-
-  final List<FlowerData> _mockFlowers = [
-    FlowerData(dataNo: '1', flowNm: '벚꽃', fMonth: 4, fDay: 1, flowLang: '정신적 아름다움, 순결',
-        imgUrl1: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Cherry_blossoms_in_Vancouver_3_crop.jpg/320px-Cherry_blossoms_in_Vancouver_3_crop.jpg'),
-    FlowerData(dataNo: '2', flowNm: '튤립', fMonth: 3, fDay: 25, flowLang: '박애, 사랑의 고백',
-        imgUrl1: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Tulip_-_florescence.jpg/320px-Tulip_-_florescence.jpg'),
-    FlowerData(dataNo: '3', flowNm: '동백', fMonth: 1, fDay: 15, flowLang: '겸손한 매력',
-        imgUrl1: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Camellia_japonica_flower_2.jpg/320px-Camellia_japonica_flower_2.jpg'),
-    FlowerData(dataNo: '4', flowNm: '장미', fMonth: 5, fDay: 10, flowLang: '사랑, 아름다움',
-        imgUrl1: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Rosa_rubiginosa_1.jpg/320px-Rosa_rubiginosa_1.jpg'),
-    FlowerData(dataNo: '5', flowNm: '수국', fMonth: 6, fDay: 20, flowLang: '변덕, 진심',
-        imgUrl1: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Hydrangea_macrophylla_-_Bigleaf_hydrangea.jpg/320px-Hydrangea_macrophylla_-_Bigleaf_hydrangea.jpg'),
-    FlowerData(dataNo: '6', flowNm: '코스모스', fMonth: 9, fDay: 15, flowLang: '소녀의 순정',
-        imgUrl1: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Cosmos_bipinnatus_2.jpg/320px-Cosmos_bipinnatus_2.jpg'),
-    FlowerData(dataNo: '7', flowNm: '해바라기', fMonth: 7, fDay: 5, flowLang: '숭배, 그리움',
-        imgUrl1: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Sunflower_sky_backdrop.jpg/320px-Sunflower_sky_backdrop.jpg'),
-    FlowerData(dataNo: '8', flowNm: '라벤더', fMonth: 6, fDay: 1, flowLang: '침묵, 기대',
-        imgUrl1: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Single_laridge_702702.jpg/320px-Single_laridge_702702.jpg'),
-    FlowerData(dataNo: '9', flowNm: '무궁화', fMonth: 8, fDay: 15, flowLang: '은근과 끈기',
-        imgUrl1: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Hibiscus_syriacus_%28Korean_National_Flower%29.jpg/320px-Hibiscus_syriacus_%28Korean_National_Flower%29.jpg'),
-    FlowerData(dataNo: '10', flowNm: '매화', fMonth: 2, fDay: 10, flowLang: '고결, 인내',
-        imgUrl1: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Plum_blossom3.jpg/320px-Plum_blossom3.jpg'),
-    FlowerData(dataNo: '11', flowNm: '진달래', fMonth: 4, fDay: 8, flowLang: '사랑의 기쁨',
-        imgUrl1: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/RhsijokRhododendron_schlippenbachii2.jpg/320px-RhsijokRhododendron_schlippenbachii2.jpg'),
-    FlowerData(dataNo: '12', flowNm: '국화', fMonth: 10, fDay: 14, flowLang: '고결, 성실',
-        imgUrl1: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Chrysanthemum_November_2007.jpg/320px-Chrysanthemum_November_2007.jpg'),
-  ];
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -49,18 +23,30 @@ class _FlowerBookPageState extends State<FlowerBookPage> {
     _loadFlowers();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadFlowers() async {
-    setState(() { _isLoading = true; _error = null; });
-    if (!FlowerApiService.isApiKeySet) {
-      await Future.delayed(const Duration(milliseconds: 300));
-      if (mounted) setState(() { _flowers = _mockFlowers; _isLoading = false; });
-      return;
-    }
+    setState(() { _isLoading = true; _error = null; _isSearching = false; });
     try {
-      final flowers = await _api.getFlowerList(month: _selectedMonth);
+      final flowers = await FlowerBookApiService.getByMonth(_selectedMonth);
       if (mounted) setState(() { _flowers = flowers; _isLoading = false; });
     } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _isLoading = false; _flowers = _mockFlowers; });
+      if (mounted) setState(() { _error = e.toString(); _isLoading = false; });
+    }
+  }
+
+  Future<void> _search(String keyword) async {
+    if (keyword.trim().isEmpty) { _loadFlowers(); return; }
+    setState(() { _isLoading = true; _isSearching = true; });
+    try {
+      final results = await FlowerBookApiService.search(keyword.trim());
+      if (mounted) setState(() { _flowers = results; _isLoading = false; });
+    } catch (e) {
+      if (mounted) setState(() { _error = e.toString(); _isLoading = false; });
     }
   }
 
@@ -77,30 +63,70 @@ class _FlowerBookPageState extends State<FlowerBookPage> {
         ),
         title: Text('꽃 도감', style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold)),
         actions: [
-          if (!FlowerApiService.isApiKeySet)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Chip(
-                label: const Text('Mock 데이터', style: TextStyle(fontSize: 10)),
-                backgroundColor: Colors.orange.withAlpha(30),
-                labelStyle: TextStyle(color: Colors.orange[800]),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
+          IconButton(
+            icon: Icon(Icons.search, color: colors.primary),
+            onPressed: () => _showSearch(colors),
+          ),
         ],
       ),
       body: Column(
         children: [
-          _buildMonthSelector(colors),
+          if (!_isSearching) _buildMonthSelector(colors),
           Expanded(
             child: _isLoading
                 ? Center(child: CircularProgressIndicator(color: colors.primary))
-                : _error != null && _flowers.isEmpty
+                : _error != null
                     ? _buildErrorView(colors)
-                    : _buildFlowerGrid(colors),
+                    : _flowers.isEmpty
+                        ? Center(child: Text('해당 월의 꽃 정보가 없습니다', style: TextStyle(color: Colors.grey[500])))
+                        : _buildFlowerGrid(colors),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showSearch(SeasonColors colors) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 16, right: 16, top: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _searchController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: '꽃 이름으로 검색',
+                prefixIcon: Icon(Icons.search, color: colors.primary),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onSubmitted: (v) { Navigator.pop(ctx); _search(v); },
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () { Navigator.pop(ctx); _search(_searchController.text); },
+                    style: ElevatedButton.styleFrom(backgroundColor: colors.primary),
+                    child: const Text('검색', style: TextStyle(color: Colors.white)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () { Navigator.pop(ctx); _searchController.clear(); _loadFlowers(); },
+                  child: const Text('초기화'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }
@@ -116,19 +142,17 @@ class _FlowerBookPageState extends State<FlowerBookPage> {
           final m = i + 1;
           final isSelected = m == _selectedMonth;
           return GestureDetector(
-            onTap: () {
-              setState(() => _selectedMonth = m);
-              if (FlowerApiService.isApiKeySet) _loadFlowers();
-            },
+            onTap: () { setState(() => _selectedMonth = m); _loadFlowers(); },
             child: Container(
               width: 44,
               margin: const EdgeInsets.symmetric(horizontal: 3),
               decoration: BoxDecoration(
                 color: isSelected ? colors.primary : Colors.white,
                 borderRadius: BorderRadius.circular(14),
-                boxShadow: isSelected
-                    ? [BoxShadow(color: colors.primary.withAlpha(40), blurRadius: 8)]
-                    : [BoxShadow(color: Colors.grey.withAlpha(20), blurRadius: 4)],
+                boxShadow: [BoxShadow(
+                  color: isSelected ? colors.primary.withAlpha(40) : Colors.grey.withAlpha(20),
+                  blurRadius: isSelected ? 8 : 4,
+                )],
               ),
               child: Center(
                 child: Text('${m}월', style: TextStyle(
@@ -145,21 +169,19 @@ class _FlowerBookPageState extends State<FlowerBookPage> {
   }
 
   Widget _buildFlowerGrid(SeasonColors colors) {
-    final displayFlowers = _flowers.isEmpty ? _mockFlowers : _flowers;
     return GridView.builder(
       padding: const EdgeInsets.all(10),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3, childAspectRatio: 0.68, crossAxisSpacing: 8, mainAxisSpacing: 8,
       ),
-      itemCount: displayFlowers.length,
-      itemBuilder: (context, i) => _buildFlowerCard(displayFlowers[i], colors),
+      itemCount: _flowers.length,
+      itemBuilder: (context, i) => _buildFlowerCard(_flowers[i], colors),
     );
   }
 
-  Widget _buildFlowerCard(FlowerData flower, SeasonColors colors) {
-    final emoji = _flowerEmoji(flower.flowNm);
-    final cardColor = _flowerColor(flower.flowNm);
-
+  Widget _buildFlowerCard(FlowerBookItem flower, SeasonColors colors) {
+    final emoji = flower.categoryEmoji ?? '🌿';
+    final cardColor = _categoryColor(flower.categoryName);
     return GestureDetector(
       onTap: () => _showFlowerDetail(flower, colors),
       child: Container(
@@ -177,13 +199,11 @@ class _FlowerBookPageState extends State<FlowerBookPage> {
                   color: cardColor.withAlpha(30),
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
                 ),
-                child: flower.mainImageUrl.isNotEmpty
+                child: flower.imageUrl != null && flower.imageUrl!.isNotEmpty
                     ? ClipRRect(
                         borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-                        child: Image.network(flower.mainImageUrl, fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Center(child: Text(emoji, style: const TextStyle(fontSize: 32))),
-                        ),
-                      )
+                        child: Image.network(flower.imageUrl!, fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Center(child: Text(emoji, style: const TextStyle(fontSize: 32)))))
                     : Center(child: Text(emoji, style: const TextStyle(fontSize: 32))),
               ),
             ),
@@ -192,9 +212,9 @@ class _FlowerBookPageState extends State<FlowerBookPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(flower.flowNm, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(flower.name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 1),
-                  Text(flower.flowLang, style: TextStyle(fontSize: 9, color: Colors.grey[500]), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(flower.flowerLanguage ?? '', style: TextStyle(fontSize: 9, color: Colors.grey[500]), maxLines: 1, overflow: TextOverflow.ellipsis),
                 ],
               ),
             ),
@@ -204,49 +224,32 @@ class _FlowerBookPageState extends State<FlowerBookPage> {
     );
   }
 
-  void _showFlowerDetail(FlowerData flower, SeasonColors colors) {
+  void _showFlowerDetail(FlowerBookItem flower, SeasonColors colors) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _FlowerDetailSheet(
         flower: flower, colors: colors,
-        emoji: _flowerEmoji(flower.flowNm),
-        cardColor: _flowerColor(flower.flowNm),
-        api: FlowerApiService.isApiKeySet ? _api : null,
+        cardColor: _categoryColor(flower.categoryName),
       ),
     );
   }
 
-  String _flowerEmoji(String name) {
-    if (name.contains('벚꽃') || name.contains('벚나무')) return '🌸';
-    if (name.contains('장미')) return '🌹';
-    if (name.contains('튤립')) return '🌷';
-    if (name.contains('해바라기')) return '🌻';
-    if (name.contains('국화')) return '🏵️';
-    if (name.contains('코스모스')) return '🌼';
-    if (name.contains('수국')) return '💜';
-    if (name.contains('동백')) return '🔴';
-    if (name.contains('라벤더')) return '💐';
-    if (name.contains('무궁화')) return '🌺';
-    if (name.contains('매화')) return '⚪';
-    if (name.contains('진달래')) return '🩷';
-    return '🌿';
-  }
-
-  Color _flowerColor(String name) {
-    if (name.contains('벚꽃') || name.contains('벚나무')) return const Color(0xFFFFB7C5);
-    if (name.contains('장미')) return const Color(0xFFEC407A);
-    if (name.contains('튤립')) return const Color(0xFFFF6B6B);
-    if (name.contains('해바라기')) return const Color(0xFFFFCA28);
-    if (name.contains('국화')) return const Color(0xFFFFA726);
-    if (name.contains('코스모스')) return const Color(0xFFFF8A65);
-    if (name.contains('수국')) return const Color(0xFF7E57C2);
-    if (name.contains('동백')) return const Color(0xFFE53935);
-    if (name.contains('라벤더')) return const Color(0xFFAB47BC);
-    if (name.contains('무궁화')) return const Color(0xFFE91E63);
-    if (name.contains('매화')) return const Color(0xFFBDBDBD);
-    if (name.contains('진달래')) return const Color(0xFFE8A0BF);
+  Color _categoryColor(String? category) {
+    if (category == null) return const Color(0xFF81C784);
+    if (category.contains('벚꽃')) return const Color(0xFFFFB7C5);
+    if (category.contains('장미')) return const Color(0xFFEC407A);
+    if (category.contains('튤립')) return const Color(0xFFFF6B6B);
+    if (category.contains('해바라기')) return const Color(0xFFFFCA28);
+    if (category.contains('국화')) return const Color(0xFFFFA726);
+    if (category.contains('코스모스')) return const Color(0xFFFF8A65);
+    if (category.contains('수국')) return const Color(0xFF7E57C2);
+    if (category.contains('동백')) return const Color(0xFFE53935);
+    if (category.contains('라벤더')) return const Color(0xFFAB47BC);
+    if (category.contains('무궁화')) return const Color(0xFFE91E63);
+    if (category.contains('매화')) return const Color(0xFFBDBDBD);
+    if (category.contains('진달래')) return const Color(0xFFE8A0BF);
     return const Color(0xFF81C784);
   }
 
@@ -271,35 +274,29 @@ class _FlowerBookPageState extends State<FlowerBookPage> {
 }
 
 class _FlowerDetailSheet extends StatefulWidget {
-  final FlowerData flower;
+  final FlowerBookItem flower;
   final SeasonColors colors;
-  final String emoji;
   final Color cardColor;
-  final FlowerApiService? api;
 
-  const _FlowerDetailSheet({
-    required this.flower, required this.colors, required this.emoji,
-    required this.cardColor, this.api,
-  });
+  const _FlowerDetailSheet({required this.flower, required this.colors, required this.cardColor});
 
   @override
   State<_FlowerDetailSheet> createState() => _FlowerDetailSheetState();
 }
 
 class _FlowerDetailSheetState extends State<_FlowerDetailSheet> {
-  FlowerDetail? _detail;
-  bool _loadingDetail = false;
+  FlowerBookDetail? _detail;
+  bool _loadingDetail = true;
 
   @override
   void initState() {
     super.initState();
-    if (widget.api != null) _loadDetail();
+    _loadDetail();
   }
 
   Future<void> _loadDetail() async {
-    setState(() => _loadingDetail = true);
     try {
-      final detail = await widget.api!.getFlowerDetail(widget.flower.dataNo);
+      final detail = await FlowerBookApiService.getDetail(widget.flower.id);
       if (mounted) setState(() { _detail = detail; _loadingDetail = false; });
     } catch (e) {
       if (mounted) setState(() => _loadingDetail = false);
@@ -308,6 +305,9 @@ class _FlowerDetailSheetState extends State<_FlowerDetailSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final emoji = widget.flower.categoryEmoji ?? '🌿';
+    final imageUrl = _detail?.imageUrl ?? widget.flower.imageUrl;
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
       decoration: const BoxDecoration(
@@ -321,11 +321,11 @@ class _FlowerDetailSheetState extends State<_FlowerDetailSheet> {
             width: double.infinity, height: 160,
             margin: const EdgeInsets.all(16),
             decoration: BoxDecoration(color: widget.cardColor.withAlpha(40), borderRadius: BorderRadius.circular(20)),
-            child: widget.flower.mainImageUrl.isNotEmpty
+            child: imageUrl != null && imageUrl.isNotEmpty
                 ? ClipRRect(borderRadius: BorderRadius.circular(20),
-                    child: Image.network(widget.flower.mainImageUrl, fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Center(child: Text(widget.emoji, style: const TextStyle(fontSize: 72)))))
-                : Center(child: Text(widget.emoji, style: const TextStyle(fontSize: 72))),
+                    child: Image.network(imageUrl, fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Center(child: Text(emoji, style: const TextStyle(fontSize: 72)))))
+                : Center(child: Text(emoji, style: const TextStyle(fontSize: 72))),
           ),
           Expanded(
             child: _loadingDetail
@@ -333,23 +333,19 @@ class _FlowerDetailSheetState extends State<_FlowerDetailSheet> {
                 : ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     children: [
-                      Text(_detail?.flowNm ?? widget.flower.flowNm, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                      if (_detail?.sciNm.isNotEmpty == true)
-                        Text(_detail!.sciNm, style: TextStyle(fontSize: 14, color: Colors.grey[500], fontStyle: FontStyle.italic)),
+                      Text(_detail?.name ?? widget.flower.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                      if (_detail?.scientificName?.isNotEmpty == true)
+                        Text(_detail!.scientificName!, style: TextStyle(fontSize: 14, color: Colors.grey[500], fontStyle: FontStyle.italic)),
                       const SizedBox(height: 12),
-                      _infoChip(Icons.format_quote, '꽃말', _detail?.flowLang ?? widget.flower.flowLang),
-                      _infoChip(Icons.calendar_today, '오늘의 꽃', widget.flower.dateString),
-                      if (_detail?.fContent.isNotEmpty == true) ...[
+                      _infoChip(Icons.format_quote, '꽃말', _detail?.flowerLanguage ?? widget.flower.flowerLanguage ?? ''),
+                      _infoChip(Icons.calendar_today, '개화', widget.flower.dateString),
+                      if (_detail?.description?.isNotEmpty == true) ...[
                         const SizedBox(height: 16), _sectionTitle('꽃 이야기'),
-                        Text(_detail!.fContent, style: const TextStyle(fontSize: 14, height: 1.6)),
+                        Text(_detail!.description!, style: const TextStyle(fontSize: 14, height: 1.6)),
                       ],
-                      if (_detail?.fUse.isNotEmpty == true) ...[
-                        const SizedBox(height: 16), _sectionTitle('이용 방법'),
-                        Text(_detail!.fUse, style: const TextStyle(fontSize: 14, height: 1.6)),
-                      ],
-                      if (_detail?.fGrow.isNotEmpty == true) ...[
+                      if (_detail?.growTips?.isNotEmpty == true) ...[
                         const SizedBox(height: 16), _sectionTitle('기르기'),
-                        Text(_detail!.fGrow, style: const TextStyle(fontSize: 14, height: 1.6)),
+                        Text(_detail!.growTips!, style: const TextStyle(fontSize: 14, height: 1.6)),
                       ],
                       const SizedBox(height: 24),
                     ],
@@ -361,6 +357,7 @@ class _FlowerDetailSheetState extends State<_FlowerDetailSheet> {
   }
 
   Widget _infoChip(IconData icon, String label, String value) {
+    if (value.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
