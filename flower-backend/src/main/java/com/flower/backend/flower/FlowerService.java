@@ -12,7 +12,7 @@ import java.util.Optional;
 @Transactional(readOnly = true)
 public class FlowerService {
 
-    private final FlowerRepository flowerRepository;
+    private final FlowerBookRepository flowerRepository;
     private final FlowerCategoryRepository categoryRepository;
     private final FlowerSpeciesMappingRepository mappingRepository;
 

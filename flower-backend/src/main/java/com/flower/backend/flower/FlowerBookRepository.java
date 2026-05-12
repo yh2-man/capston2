@@ -7,7 +7,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
-public interface FlowerRepository extends JpaRepository<FlowerBook, Long> {
+public interface FlowerBookRepository extends JpaRepository<FlowerBook, Long> {
 
     Optional<FlowerBook> findByDataNo(String dataNo);
 

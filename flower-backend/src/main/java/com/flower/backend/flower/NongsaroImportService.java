@@ -20,7 +20,7 @@ public class NongsaroImportService {
 
     private static final String BASE_URL = "http://apis.data.go.kr/1390804/NihhsTodayFlowerInfo01";
 
-    private final FlowerRepository flowerRepository;
+    private final FlowerBookRepository flowerRepository;
     private final FlowerCategoryRepository categoryRepository;
 
     @Value("${nongsaro.api-key:}")
