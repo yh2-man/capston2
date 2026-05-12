@@ -9,6 +9,8 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../api_config.dart';
 import '../models/chat_action.dart';
 import '../theme/season_theme.dart';
+import '../widgets/app_bottom_navigation.dart';
+import '../widgets/chat_floating_button.dart';
 import '../widgets/map_html_view.dart';
 
 class KakaoMapScreen extends StatefulWidget {
@@ -28,6 +30,7 @@ class KakaoMapScreen extends StatefulWidget {
 class KakaoMapScreenState extends State<KakaoMapScreen> {
   WebViewController? _controller;
   String? _mapHtml;
+  final TextEditingController _searchController = TextEditingController();
   late final String _webMapViewType = 'flower-map-${identityHashCode(this)}';
   var _isLoading = true;
   String? _errorMessage;
@@ -258,28 +261,111 @@ class KakaoMapScreenState extends State<KakaoMapScreen> {
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = SeasonTheme.getColors();
 
-    // 임베디드 모드: 맵만 표시
     if (widget.isEmbedded) {
       return _buildMapBody(colors);
     }
 
-    // 전체 화면 모드: 뒤로가기 바 + 맵
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, color: colors.primary, size: 18),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text('지도', style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold, fontSize: 16)),
-        centerTitle: true,
+      body: Stack(
+        children: [
+          Positioned.fill(child: _buildMapBody(colors)),
+          _buildTopBar(colors),
+          _buildZoomControls(colors),
+        ],
       ),
-      body: _buildMapBody(colors),
+      floatingActionButton: const ChatFloatingButton(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      bottomNavigationBar: const AppBottomNavigation(currentTab: AppNavTab.map),
+    );
+  }
+
+  Widget _buildTopBar(SeasonColors colors) {
+    return Positioned(
+      top: 0, left: 0, right: 0,
+      child: SafeArea(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.88),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 3))],
+          ),
+          child: Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.arrow_back_ios_new, color: colors.primary, size: 18),
+                tooltip: '뒤로가기',
+                onPressed: () => Navigator.pop(context),
+              ),
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  textInputAction: TextInputAction.search,
+                  decoration: const InputDecoration(
+                    hintText: '꽃 이름, 종류, 주소',
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                  ),
+                  onSubmitted: (value) => setSearchQuery(value.trim()),
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.search, color: colors.primary),
+                tooltip: '검색',
+                onPressed: () => setSearchQuery(_searchController.text.trim()),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildZoomControls(SeasonColors colors) {
+    return Positioned(
+      top: 100, right: 16,
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _mapControlButton(colors: colors, icon: Icons.add, tooltip: '확대', onTap: zoomIn),
+            const SizedBox(height: 8),
+            _mapControlButton(colors: colors, icon: Icons.remove, tooltip: '축소', onTap: zoomOut),
+            const SizedBox(height: 8),
+            _mapControlButton(colors: colors, icon: Icons.my_location, tooltip: '현재 위치', onTap: moveToCurrentLocation),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _mapControlButton({required SeasonColors colors, required IconData icon, required String tooltip, required VoidCallback onTap}) {
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 44, height: 44,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.92),
+            shape: BoxShape.circle,
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 8)],
+          ),
+          child: Icon(icon, color: colors.primary, size: 22),
+        ),
+      ),
     );
   }
 
@@ -306,26 +392,17 @@ class KakaoMapScreenState extends State<KakaoMapScreen> {
                     children: [
                       Icon(Icons.map_outlined, size: 44, color: colors.primary),
                       const SizedBox(height: 12),
-                      const Text(
-                        'Map could not be loaded.',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                      const Text('지도를 불러오지 못했습니다.', style: TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
-                      Text(
-                        _errorMessage!,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                      ),
+                      Text(_errorMessage!, textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12)),
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: () {
-                          setState(() {
-                            _errorMessage = null;
-                            _isLoading = true;
-                          });
+                          setState(() { _errorMessage = null; _isLoading = true; });
                           _loadMapHtml();
                         },
-                        child: const Text('Retry'),
+                        child: const Text('다시 시도'),
                       ),
                     ],
                   ),
