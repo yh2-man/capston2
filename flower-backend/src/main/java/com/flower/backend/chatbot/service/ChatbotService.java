@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Service;
 public class ChatbotService {
 
     private static final int MAX_HISTORY_MESSAGES = 12;
+    private static final long SESSION_TTL_MS = 60 * 60 * 1000L; // 1시간
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
     private final FlowerToolService flowerToolService;
@@ -36,7 +38,15 @@ public class ChatbotService {
     private final ChatActionValidator chatActionValidator = new ChatActionValidator();
     private final ChatClient chatClient;
     private final String openAiApiKey;
-    private final Map<String, List<ChatTurn>> sessions = new ConcurrentHashMap<>();
+    private final Map<String, SessionData> sessions = new ConcurrentHashMap<>();
+
+    private static class SessionData {
+        final List<ChatTurn> history = new ArrayList<>();
+        volatile long lastAccessTime = System.currentTimeMillis();
+
+        void touch() { lastAccessTime = System.currentTimeMillis(); }
+        boolean isExpired() { return System.currentTimeMillis() - lastAccessTime > SESSION_TTL_MS; }
+    }
 
     public ChatbotService(
             FlowerToolService flowerToolService,
@@ -77,9 +87,7 @@ public class ChatbotService {
     }
 
     public void clearSession(String sessionId) {
-        if (sessionId != null && !sessionId.isBlank()) {
-            sessions.remove(sessionId);
-        }
+        if (sessionId != null && !sessionId.isBlank()) sessions.remove(sessionId);
     }
 
     private AgentExecution routeAndExecute(String message, ChatMessageRequest.LocationContext location) {
@@ -418,7 +426,9 @@ public class ChatbotService {
 
         try {
             StringBuilder userPrompt = new StringBuilder();
-            for (ChatTurn turn : sessions.getOrDefault(sessionId, List.of())) {
+            SessionData sessionData = sessions.get(sessionId);
+            List<ChatTurn> history = sessionData != null ? sessionData.history : List.of();
+            for (ChatTurn turn : history) {
                 userPrompt.append(turn.role()).append(": ").append(turn.content()).append("\n");
             }
             userPrompt.append("\nUser message:\n")
@@ -571,11 +581,20 @@ public class ChatbotService {
                 .build();
     }
 
+    @Scheduled(fixedDelay = 300_000) // 5분마다 만료 세션 정리
+    public void cleanExpiredSessions() {
+        int before = sessions.size();
+        sessions.entrySet().removeIf(e -> e.getValue().isExpired());
+        int removed = before - sessions.size();
+        if (removed > 0) log.info("만료 세션 {}개 정리 (남은 세션: {})", removed, sessions.size());
+    }
+
     private void remember(String sessionId, String role, String content) {
-        List<ChatTurn> history = sessions.computeIfAbsent(sessionId, key -> new ArrayList<>());
-        history.add(new ChatTurn(role, content));
-        while (history.size() > MAX_HISTORY_MESSAGES) {
-            history.remove(0);
+        SessionData data = sessions.computeIfAbsent(sessionId, key -> new SessionData());
+        data.touch();
+        data.history.add(new ChatTurn(role, content));
+        while (data.history.size() > MAX_HISTORY_MESSAGES) {
+            data.history.remove(0);
         }
     }
 
