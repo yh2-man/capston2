@@ -240,12 +240,17 @@ public class ChatbotService {
     }
 
     private String planningSystemPrompt() {
+        // 이 프롬프트는 AIPlanner가 사용자 말을 JSON 계획으로만 바꾸게 하는 지시문이다.
+        // GENERAL은 인사/감사/잡담/일반 질문처럼 앱 화면을 움직일 필요가 없는 대화를 뜻한다.
+        // action은 실제 Flutter 앱 제어 명령이므로, 실행할 도구가 없으면 반드시 빈 배열을 반환해야 한다.
+        // MAP intent는 지도 관련 의도 분류이고, NAVIGATE/MAP action은 실제 지도 화면 이동 명령이다.
+        // 프롬프트는 AI의 계획 생성을 유도하고, 서버 validator는 최종 안전장치 역할을 한다.
         return """
                 You are FLOWER's RouterAI and specialist planner.
                 Return only valid JSON. Do not wrap it in markdown.
                 Schema:
                 {
-                  "intents": ["MAP" | "FLOWER" | "COMMUNITY" | "WALK" | "QUEST" | "SHOP"],
+                  "intents": ["GENERAL" | "MAP" | "FLOWER" | "COMMUNITY" | "WALK" | "QUEST" | "SHOP"],
                   "searchKeyword": "optional keyword, empty string if the user only wants screen navigation",
                   "actions": [
                     {"type":"NAVIGATE","target":"MAP|COMMUNITY|WALK|FLOWER_BOOK|SAVED|QUEST|SHOP","params":{}},
@@ -254,6 +259,10 @@ public class ChatbotService {
                   ]
                 }
                 Rules:
+                - For greetings, thanks, small talk, capability questions, and general conversation, return intents ["GENERAL"], searchKeyword "", and actions [].
+                - If there is no appropriate app-control action to run, return actions [].
+                - Do not create any NAVIGATE action unless the user explicitly asks to open, show, move to, or view a screen.
+                - Do not create NAVIGATE MAP unless the user explicitly asks for a map, location, nearby places, route, directions, or path.
                 - If the user only asks to open or view the map, use NAVIGATE MAP only and searchKeyword must be "".
                 - Use MAP_SET_SEARCH_QUERY only when the user names a flower or flower place to find on the map.
                 - For Korean flower names, preserve the full name such as "벚꽃"; remove particles such as "에서".
