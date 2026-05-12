@@ -56,6 +56,7 @@ public class SecurityConfig {
                     "/oauth/callback",
                     "/uploads/**",
                     "/chatbot/**",
+                    "/api/v1/admin/flowers/import",
                     "/error"
                 ).permitAll()
                 .anyRequest().authenticated()
