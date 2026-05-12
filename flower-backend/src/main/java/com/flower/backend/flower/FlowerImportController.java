@@ -2,6 +2,7 @@ package com.flower.backend.flower;
 
 import com.flower.backend.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,11 +14,19 @@ public class FlowerImportController {
 
     private final NongsaroImportService importService;
 
-    // POST /api/v1/admin/flowers/import
-    // 농사로 API에서 꽃 데이터 전체 수집
+    @Autowired(required = false)
+    private WikiImageService wikiImageService;
+
     @PostMapping("/import")
     public ApiResponse<NongsaroImportService.ImportResult> importFromNongsaro() {
-        NongsaroImportService.ImportResult result = importService.importAll();
-        return ApiResponse.ok(result);
+        return ApiResponse.ok(importService.importAll());
+    }
+
+    @PostMapping("/fetch-images")
+    public ApiResponse<?> fetchImages() {
+        if (wikiImageService == null) {
+            return ApiResponse.ok("로컬 환경에서는 지원되지 않습니다.");
+        }
+        return ApiResponse.ok(wikiImageService.fetchAndStoreImages());
     }
 }

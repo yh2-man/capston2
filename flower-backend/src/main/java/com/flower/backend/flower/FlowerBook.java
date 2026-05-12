@@ -59,4 +59,8 @@ public class FlowerBook {
     public void updateStatus(String status) {
         this.status = status;
     }
+
+    public void updateImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
 }
