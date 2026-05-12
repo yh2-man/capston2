@@ -1,3 +1,4 @@
+import '../widgets/chat_floating_button.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/season_theme.dart';
@@ -42,6 +43,8 @@ class _SavedPageState extends State<SavedPage> with SingleTickerProviderStateMix
     final colors = SeasonTheme.getColors();
     return Scaffold(
       backgroundColor: colors.background,
+      floatingActionButton: const ChatFloatingButton(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,

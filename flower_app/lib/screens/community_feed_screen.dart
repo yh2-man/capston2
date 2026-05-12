@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/season_theme.dart';
 import '../services/community_api_service.dart';
+import '../widgets/app_bottom_navigation.dart';
+import '../widgets/chat_floating_button.dart';
 import 'create_post_screen.dart';
 
 class CommunityFeedScreen extends StatefulWidget {
@@ -70,6 +72,9 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
     final colors = SeasonTheme.getColors();
     return Scaffold(
       backgroundColor: colors.background,
+      floatingActionButton: const ChatFloatingButton(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      bottomNavigationBar: const AppBottomNavigation(currentTab: AppNavTab.community),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
