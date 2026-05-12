@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,11 +34,15 @@ public class CommunityService {
 
         boolean hasNext = posts.size() > limit;
         if (hasNext) posts = posts.subList(0, limit);
-
         Long nextCursor = hasNext ? posts.get(posts.size() - 1).getId() : null;
 
+        // 배치 조회로 N+1 해결
+        Set<Long> postIds = posts.stream().map(CommunityPost::getId).collect(Collectors.toSet());
+        Set<Long> likedIds = userId != null ? likeRepository.findLikedPostIds(userId, postIds) : Set.of();
+        Set<Long> savedIds = userId != null ? savedPostRepository.findSavedPostIds(userId, postIds) : Set.of();
+
         return FeedResponse.builder()
-                .posts(posts.stream().map(p -> toResponse(p, userId)).collect(Collectors.toList()))
+                .posts(posts.stream().map(p -> toResponse(p, likedIds, savedIds)).collect(Collectors.toList()))
                 .nextCursor(nextCursor)
                 .hasNext(hasNext)
                 .build();
@@ -46,7 +51,8 @@ public class CommunityService {
     @Transactional
     public PostResponse createPost(Long userId, String content, String flowerSpecies,
                                    MultipartFile image, Double latitude, Double longitude, String address) {
-        User user = userRepository.findById(userId).orElseThrow();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
         String imageUrl = null;
         if (image != null && !image.isEmpty()) {
@@ -54,22 +60,19 @@ public class CommunityService {
         }
 
         CommunityPost post = CommunityPost.builder()
-                .user(user)
-                .content(content)
-                .flowerSpecies(flowerSpecies)
-                .imageUrl(imageUrl)
-                .latitude(latitude)
-                .longitude(longitude)
-                .address(address)
+                .user(user).content(content).flowerSpecies(flowerSpecies)
+                .imageUrl(imageUrl).latitude(latitude).longitude(longitude).address(address)
                 .build();
 
-        return toResponse(postRepository.save(post), userId);
+        CommunityPost saved = postRepository.save(post);
+        return toResponse(saved, Set.of(), Set.of());
     }
 
     @Transactional
     public Map<String, Object> toggleLike(Long userId, Long postId) {
         PostLikeId likeId = new PostLikeId(userId, postId);
-        CommunityPost post = postRepository.findById(postId).orElseThrow();
+        CommunityPost post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다."));
 
         boolean liked;
         if (likeRepository.existsById(likeId)) {
@@ -88,7 +91,6 @@ public class CommunityService {
     @Transactional
     public Map<String, Object> toggleSave(Long userId, Long postId) {
         SavedPostId savedId = new SavedPostId(userId, postId);
-
         boolean saved;
         if (savedPostRepository.existsById(savedId)) {
             savedPostRepository.deleteById(savedId);
@@ -100,7 +102,7 @@ public class CommunityService {
         return Map.of("saved", saved);
     }
 
-    private PostResponse toResponse(CommunityPost post, Long userId) {
+    private PostResponse toResponse(CommunityPost post, Set<Long> likedIds, Set<Long> savedIds) {
         return PostResponse.builder()
                 .id(post.getId())
                 .userId(post.getUser().getId())
@@ -113,8 +115,8 @@ public class CommunityService {
                 .latitude(post.getLatitude())
                 .longitude(post.getLongitude())
                 .likeCount(post.getLikeCount())
-                .liked(likeRepository.existsById(new PostLikeId(userId, post.getId())))
-                .saved(savedPostRepository.existsById(new SavedPostId(userId, post.getId())))
+                .liked(likedIds.contains(post.getId()))
+                .saved(savedIds.contains(post.getId()))
                 .createdAt(post.getCreatedAt() != null ? post.getCreatedAt().toString() : "")
                 .build();
     }
