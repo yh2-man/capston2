@@ -34,3 +34,7 @@ JWT_SECRET: this-is-a-very-secure-and-long-secret-key-for-jwt-signing
 storage:
   upload-dir: uploads
   base-url: http://localhost:8080
+
+chatbot:
+  openai:
+    api-key: ${OPENAI_API_KEY:}

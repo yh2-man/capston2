@@ -1,48 +1,78 @@
 package com.flower.backend.flower;
 
 import jakarta.persistence.*;
-import lombok.Builder;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 @Entity
 @Table(name = "flowers")
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Flower {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, length = 20)
-    private String dataNo;
-
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false)
     private String name;
 
-    @Column(length = 200)
-    private String scientificName;
+    @Column(nullable = false)
+    private String species;
 
-    private Integer bloomMonth;
-    private Integer bloomDay;
+    @Column(nullable = false)
+    private String address;
 
-    @Column(columnDefinition = "TEXT")
-    private String flowerLanguage;
+    @Column(nullable = false)
+    private double lat;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(nullable = false)
+    private double lng;
+
+    @Column(name = "bloom_start")
+    private String bloomStart;
+
+    @Column(name = "bloom_end")
+    private String bloomEnd;
+
+    @Column(length = 1000)
     private String description;
 
-    @Column(columnDefinition = "TEXT")
-    private String growTips;
+    @Column(name = "thumbnail_url")
+    private String thumbnailUrl;
 
-    @Column(length = 1024)
-    private String imageUrl;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private BloomStatus status = BloomStatus.BLOOMING;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
-    private FlowerCategory category;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "approval_status", nullable = false)
+    private ApprovalStatus approvalStatus = ApprovalStatus.APPROVED;
+
+    @Column(name = "verification_count", nullable = false)
+    private int verificationCount = 0;
+
+    public static Flower createByQuest(String name, String species, String address, double lat, double lng) {
+        Flower flower = new Flower();
+        flower.name = name;
+        flower.species = species;
+        flower.address = address;
+        flower.lat = lat;
+        flower.lng = lng;
+        flower.status = BloomStatus.BLOOMING;
+        flower.approvalStatus = ApprovalStatus.PENDING;
+        flower.verificationCount = 1;
+        return flower;
+    }
+
+    public void addVerification() {
+        verificationCount += 1;
+        if (verificationCount >= 3) {
+            approvalStatus = ApprovalStatus.APPROVED;
+        }
+    }
+
+    public enum BloomStatus { BEFORE, BLOOMING, DONE }
+    public enum ApprovalStatus { PENDING, APPROVED, REJECTED }
 }

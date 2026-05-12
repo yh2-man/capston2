@@ -37,7 +37,7 @@ public class FlowerDto {
         private String flowerLanguage;
         private String imageUrl;
 
-        public static FlowerSummary from(Flower f) {
+        public static FlowerSummary from(FlowerBook f) {
             return FlowerSummary.builder()
                     .id(f.getId())
                     .name(f.getName())
@@ -66,7 +66,7 @@ public class FlowerDto {
         private String growTips;
         private String imageUrl;
 
-        public static FlowerDetail from(Flower f) {
+        public static FlowerDetail from(FlowerBook f) {
             return FlowerDetail.builder()
                     .id(f.getId())
                     .name(f.getName())
