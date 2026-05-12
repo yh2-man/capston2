@@ -58,6 +58,7 @@ public class SecurityConfig {
                     "/chatbot/**",
                     "/api/v1/flowers/**",
                     "/api/v1/admin/flowers/import",
+                    "/api/v1/admin/flowers/fetch-images",
                     "/error"
                 ).permitAll()
                 .anyRequest().authenticated()
