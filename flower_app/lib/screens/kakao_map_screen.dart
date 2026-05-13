@@ -146,6 +146,7 @@ class KakaoMapScreenState extends State<KakaoMapScreen> {
         'embedded': widget.isEmbedded ? '1' : '0',
         'tourApiKey': ApiConfig.tourApiKey,
       }).query;
+      if (_controller == null) return;
       await _controller!.loadRequest(
         Uri.parse('https://ourt.kro.kr/map/index.html#$mapConfig'),
       );
