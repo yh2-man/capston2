@@ -61,6 +61,8 @@ class _LoginScreenState extends State<LoginScreen> {
           final accessToken = data['accessToken'] ?? '';
           await prefs.setString('accessToken', accessToken);
           await prefs.setString('refreshToken', data['refreshToken'] ?? '');
+          if (data['nickname'] != null) await prefs.setString('nickname', data['nickname']);
+          if (data['profileImageUrl'] != null) await prefs.setString('profileImageUrl', data['profileImageUrl']);
 
           // FCM 토큰 백엔드에 전송
           final fcmToken = prefs.getString('fcmToken');

@@ -47,12 +47,19 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
 
   Future<void> _toggleLike(int index) async {
     final post = _posts[index];
-    final original = post.liked;
-    setState(() => post.liked = !post.liked);
+    final originalLiked = post.liked;
+    final originalCount = post.likeCount;
+    setState(() {
+      post.liked = !post.liked;
+      post.likeCount += post.liked ? 1 : -1;
+    });
     try {
       await CommunityApiService.toggleLike(_accessToken, post.id);
     } catch (_) {
-      if (mounted) setState(() => post.liked = original);
+      if (mounted) setState(() {
+        post.liked = originalLiked;
+        post.likeCount = originalCount;
+      });
     }
   }
 
