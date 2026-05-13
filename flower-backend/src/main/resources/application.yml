@@ -41,3 +41,7 @@ chatbot:
 
 nongsaro:
   api-key: ${NONGSARO_API_KEY:}
+
+plantid:
+  api-key: ${PLANTID_API_KEY:}
+  api-url: https://api.plant.id/v3/identification
