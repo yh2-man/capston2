@@ -129,12 +129,19 @@
       const data = JSON.parse(text);
       const items = data?.response?.body?.items?.item;
       const itemList = Array.isArray(items) ? items : items ? [items] : [];
+      const flowerKeywords = /꽃|벚|진달래|튤립|장미|수국|국화|매화|개나리|철쭉|목련|코스모스|해바라기|라벤더|동백/;
       state.festivals = itemList
         .filter(function (item) {
-          return Number(item.mapx || 0) !== 0 && Number(item.mapy || 0) !== 0;
+          return Number(item.mapx || 0) !== 0 && Number(item.mapy || 0) !== 0
+            && flowerKeywords.test(item.title || '');
         })
         .map(function (item) {
-          return { title: item.title || '', mapX: Number(item.mapx), mapY: Number(item.mapy) };
+          return {
+            title: item.title || '',
+            mapX: Number(item.mapx),
+            mapY: Number(item.mapy),
+            imageUrl: item.firstimage || item.firstimage2 || '',
+          };
         });
       renderMapMarkers();
     } catch (error) {
