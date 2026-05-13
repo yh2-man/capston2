@@ -58,8 +58,17 @@
     });
   }
 
+  // 테스트용 임시 마커 (실제 데이터 들어오면 제거)
+  const TEST_MARKERS = [
+    { flower_id: 't1', name: '여의도 벚꽃', species: '벚나무', address: '서울 영등포구 여의도동', location: { lat: 37.5219, lng: 126.9245 } },
+    { flower_id: 't2', name: '남산 개나리', species: '개나리', address: '서울 용산구 남산공원', location: { lat: 37.5512, lng: 126.9882 } },
+    { flower_id: 't3', name: '석촌호수 벚꽃', species: '벚나무', address: '서울 송파구 석촌호수', location: { lat: 37.5085, lng: 127.1020 } },
+  ];
+
   async function loadFlowers() {
-    state.flowers = await fetchFlowersFromApi() || [];
+    const apiFlowers = await fetchFlowersFromApi() || [];
+    // API 데이터 없으면 테스트 마커 표시
+    state.flowers = apiFlowers.length > 0 ? apiFlowers : TEST_MARKERS;
     applyFilters();
   }
 
