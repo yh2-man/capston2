@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,12 +17,36 @@ Future<void> main() async {
 
   final prefs = await SharedPreferences.getInstance();
   final String? token = prefs.getString('accessToken');
-  final bool hasToken = token != null && token.isNotEmpty;
+
+  // 토큰 만료 시 자동 로그아웃
+  bool hasToken = false;
+  if (token != null && token.isNotEmpty) {
+    if (_isTokenExpired(token)) {
+      await prefs.remove('accessToken');
+      await prefs.remove('refreshToken');
+    } else {
+      hasToken = true;
+    }
+  }
 
   await _initFcm(prefs);
   await _requestLocationPermission();
 
   runApp(OurTApp(hasToken: hasToken));
+}
+
+bool _isTokenExpired(String token) {
+  try {
+    final parts = token.split('.');
+    if (parts.length != 3) return true;
+    final payload = base64Url.decode(base64Url.normalize(parts[1]));
+    final data = jsonDecode(utf8.decode(payload)) as Map<String, dynamic>;
+    final exp = data['exp'] as int?;
+    if (exp == null) return true;
+    return DateTime.fromMillisecondsSinceEpoch(exp * 1000).isBefore(DateTime.now());
+  } catch (_) {
+    return true;
+  }
 }
 
 Future<void> _requestLocationPermission() async {
