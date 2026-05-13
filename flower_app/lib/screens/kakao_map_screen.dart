@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import 'package:geolocator/geolocator.dart';
+
 import '../api_config.dart';
 import '../models/chat_action.dart';
 import '../theme/season_theme.dart';
@@ -103,7 +105,22 @@ class KakaoMapScreenState extends State<KakaoMapScreen> {
   }
 
   Future<void> moveToCurrentLocation() async {
-    await _controller?.runJavaScript("if(window.FlowerMap) window.FlowerMap.moveToCurrentLocation();");
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.deniedForever) return;
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      );
+      await _controller?.runJavaScript(
+        "if(window.FlowerMap) window.FlowerMap.setCurrentPosition(${position.latitude}, ${position.longitude});",
+      );
+    } catch (e) {
+      debugPrint('[GPS] 위치 가져오기 실패: $e');
+    }
   }
 
   Future<void> _loadMapHtml() async {

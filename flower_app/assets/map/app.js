@@ -41,7 +41,15 @@
       },
       zoomIn: function () { zoomMap(-1); },
       zoomOut: function () { zoomMap(1); },
-      moveToCurrentLocation: function () { initGeolocation(); }
+      moveToCurrentLocation: function () { initGeolocation(); },
+      // Flutter에서 위치를 직접 주입
+      setCurrentPosition: function (lat, lng) {
+        state.currentPosition = { lat: Number(lat), lng: Number(lng) };
+        if (state.map && state.kakaoReady) {
+          state.map.setCenter(new kakao.maps.LatLng(lat, lng));
+        }
+        loadFlowers();
+      }
     };
   }
 
