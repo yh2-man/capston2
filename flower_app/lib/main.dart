@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:geolocator/geolocator.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
 import 'screens/profile_setup_screen.dart';
@@ -17,10 +18,19 @@ Future<void> main() async {
   final String? token = prefs.getString('accessToken');
   final bool hasToken = token != null && token.isNotEmpty;
 
-  // FCM 토큰 받아서 저장
   await _initFcm(prefs);
+  await _requestLocationPermission();
 
   runApp(OurTApp(hasToken: hasToken));
+}
+
+Future<void> _requestLocationPermission() async {
+  try {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      await Geolocator.requestPermission();
+    }
+  } catch (_) {}
 }
 
 Future<void> _initFcm(SharedPreferences prefs) async {
