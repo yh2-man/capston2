@@ -33,10 +33,12 @@ public class PlantIdService {
 
         try {
             String base64Image = Base64.getEncoder().encodeToString(imageBytes);
-            String body = MAPPER.writeValueAsString(new java.util.HashMap<>() {{
-                put("images", new String[]{"data:image/jpeg;base64," + base64Image});
-                put("similar_images", false);
-            }});
+
+            com.fasterxml.jackson.databind.node.ObjectNode bodyNode = MAPPER.createObjectNode();
+            com.fasterxml.jackson.databind.node.ArrayNode imagesArray = bodyNode.putArray("images");
+            imagesArray.add("data:image/jpeg;base64," + base64Image);
+            bodyNode.put("similar_images", false);
+            String body = MAPPER.writeValueAsString(bodyNode);
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(apiUrl))
@@ -49,7 +51,7 @@ public class PlantIdService {
                     .send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() != 200 && response.statusCode() != 201) {
-                log.warn("[PlantId] API 오류: {}", response.statusCode());
+                log.warn("[PlantId] API 오류 {}: {}", response.statusCode(), response.body());
                 return PlantIdResult.fallback();
             }
 
