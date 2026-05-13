@@ -90,21 +90,20 @@ class KakaoMapScreenState extends State<KakaoMapScreen> {
   Future<void> setSearchQuery(String query) async {
     final escaped = query.replaceAll("'", "\\'");
     await _controller?.runJavaScript(
-      "var el = document.getElementById('search-input');"
-      "if(el){ el.value='$escaped'; el.dispatchEvent(new Event('input',{bubbles:true})); }",
+      "if(window.FlowerMap) window.FlowerMap.setSearchQuery('$escaped');",
     );
   }
 
   Future<void> zoomIn() async {
-    await _controller?.runJavaScript("document.getElementById('btn-zoom-in')?.click();");
+    await _controller?.runJavaScript("if(window.FlowerMap) window.FlowerMap.zoomIn();");
   }
 
   Future<void> zoomOut() async {
-    await _controller?.runJavaScript("document.getElementById('btn-zoom-out')?.click();");
+    await _controller?.runJavaScript("if(window.FlowerMap) window.FlowerMap.zoomOut();");
   }
 
   Future<void> moveToCurrentLocation() async {
-    await _controller?.runJavaScript("document.getElementById('btn-gps')?.click();");
+    await _controller?.runJavaScript("if(window.FlowerMap) window.FlowerMap.moveToCurrentLocation();");
   }
 
   Future<void> _loadMapHtml() async {

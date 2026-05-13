@@ -206,7 +206,8 @@
       const marker = new kakao.maps.Marker({ position: position });
       marker.setMap(state.map);
       kakao.maps.event.addListener(marker, 'click', function () {
-        navigateInApp(flower.location.lat, flower.location.lng, flower.name || flower.species || '꽃');
+        showMarkerInfo(flower.name || flower.species || '꽃', flower.address || '',
+          flower.location.lat, flower.location.lng);
       });
       state.markers.push(marker);
     });
@@ -216,7 +217,7 @@
       const marker = new kakao.maps.Marker({ position: position });
       marker.setMap(state.map);
       kakao.maps.event.addListener(marker, 'click', function () {
-        navigateInApp(festival.mapY, festival.mapX, festival.title || '축제');
+        showMarkerInfo(festival.title || '축제', '', festival.mapY, festival.mapX);
       });
       state.festivalMarkers.push(marker);
     });
@@ -246,6 +247,34 @@
       state.currentPosition = null;
       applyFilters();
     }, { enableHighAccuracy: true, timeout: 8000 });
+  }
+
+  // ── 마커 정보 패널 ───────────────────────────────────────────────
+
+  function showMarkerInfo(name, address, lat, lng) {
+    var old = document.getElementById('marker-info');
+    if (old) old.remove();
+    var panel = document.createElement('div');
+    panel.id = 'marker-info';
+    panel.className = 'route-panel';
+    panel.innerHTML =
+      '<div class="route-panel-row">'
+      + '<span class="route-icon">🌸</span>'
+      + '<div class="route-info">'
+      + '  <strong>' + escapeHtml(name) + '</strong>'
+      + (address ? '<span>' + escapeHtml(address) + '</span>' : '')
+      + '</div>'
+      + '<button id="btn-navigate" class="route-toggle" style="width:auto;padding:0 10px;border-radius:12px;font-size:12px;">길찾기</button>'
+      + '<button id="btn-close-info" class="route-close">✕</button>'
+      + '</div>';
+    document.getElementById('map-shell').appendChild(panel);
+    document.getElementById('btn-close-info').addEventListener('click', function () {
+      panel.remove();
+    });
+    document.getElementById('btn-navigate').addEventListener('click', function () {
+      panel.remove();
+      navigateInApp(lat, lng, name);
+    });
   }
 
   // ── 길찾기 (OSRM) ─────────────────────────────────────────────
