@@ -10,6 +10,7 @@ import 'package:geolocator/geolocator.dart';
 
 import '../api_config.dart';
 import '../models/chat_action.dart';
+import '../services/tour_api_service.dart';
 import '../theme/season_theme.dart';
 import '../widgets/app_bottom_navigation.dart';
 import '../widgets/chat_floating_button.dart';
@@ -18,11 +19,13 @@ import '../widgets/map_html_view.dart';
 class KakaoMapScreen extends StatefulWidget {
   final bool isEmbedded;
   final List<ChatAction>? initialActions;
+  final FestivalData? initialFestival;
 
   const KakaoMapScreen({
     super.key,
     this.isEmbedded = false,
     this.initialActions,
+    this.initialFestival,
   });
 
   @override
@@ -79,6 +82,13 @@ class KakaoMapScreenState extends State<KakaoMapScreen> {
   }
 
   Future<void> _applyInitialActions() async {
+    // 축제 위치로 이동
+    final festival = widget.initialFestival;
+    if (festival != null) {
+      await _controller?.runJavaScript(
+        "if(window.FlowerMap) window.FlowerMap.setCurrentPosition(${festival.mapY}, ${festival.mapX});",
+      );
+    }
     final actions = widget.initialActions;
     if (actions == null || actions.isEmpty) return;
     for (final action in actions) {
