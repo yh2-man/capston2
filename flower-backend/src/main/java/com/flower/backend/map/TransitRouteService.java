@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.nio.charset.StandardCharsets;
+
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -51,18 +53,20 @@ public class TransitRouteService {
                 "format", "json"
         );
 
-        ResponseEntity<String> response = restTemplate.exchange(
+        // 응답을 바이트로 받아 UTF-8로 명시 변환 (인코딩 오류 방지)
+        ResponseEntity<byte[]> response = restTemplate.exchange(
                 TRANSIT_ROUTE_URL,
                 HttpMethod.POST,
                 new HttpEntity<>(payload, headers),
-                String.class
+                byte[].class
         );
 
         if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
             throw new IllegalStateException("TMAP transit request failed: " + response.getStatusCode());
         }
 
-        return parseTransitRoute(response.getBody());
+        String body = new String(response.getBody(), StandardCharsets.UTF_8);
+        return parseTransitRoute(body);
     }
 
     private TransitRouteDto.TransitRouteResponse parseTransitRoute(String body) {
