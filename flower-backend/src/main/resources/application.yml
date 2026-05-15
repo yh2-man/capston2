@@ -45,3 +45,7 @@ nongsaro:
 plantid:
   api-key: ${PLANTID_API_KEY:}
   api-url: https://api.plant.id/v3/identification
+
+tmap:
+  transit:
+    app-key: ${TMAP_API_KEY:}

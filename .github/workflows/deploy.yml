@@ -76,6 +76,7 @@ jobs:
             echo "ORACLE_REGION=${{ secrets.ORACLE_REGION }}" >> ~/app/app.env
             echo "NONGSARO_API_KEY=${{ secrets.NONGSARO_API_KEY }}" >> ~/app/app.env
             echo "PLANTID_API_KEY=${{ secrets.PLANTID_API_KEY }}" >> ~/app/app.env
+            echo "TMAP_API_KEY=${{ secrets.TMAP_API_KEY }}" >> ~/app/app.env
             echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> ~/app/app.env
             sudo systemctl restart ourt-backend
             echo "서버 시작 완료"
