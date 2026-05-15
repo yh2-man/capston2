@@ -152,7 +152,9 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
               Container(
                 padding: EdgeInsets.only(
                   left: 12, right: 8, top: 8,
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 8,
+                  bottom: MediaQuery.of(context).viewInsets.bottom +
+                      MediaQuery.of(context).padding.bottom +
+                      65 + 8, // 하단 탭바 높이(65) + safe area + 여백
                 ),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -287,6 +289,7 @@ void showCommentSheet(BuildContext context, int postId, {VoidCallback? onComment
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    useRootNavigator: true, // 탭바 위로 시트가 뜨게
     backgroundColor: Colors.transparent,
     builder: (_) => CommentBottomSheet(postId: postId, onCommentAdded: onCommentAdded),
   );
