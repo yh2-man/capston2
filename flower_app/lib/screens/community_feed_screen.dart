@@ -5,6 +5,7 @@ import '../services/community_api_service.dart';
 import '../widgets/app_bottom_navigation.dart';
 import '../widgets/chat_floating_button.dart';
 import 'create_flower_spot_screen.dart';
+import '../widgets/comment_bottom_sheet.dart';
 
 class CommunityFeedScreen extends StatefulWidget {
   const CommunityFeedScreen({super.key});
@@ -229,7 +230,20 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
                 ),
                 Text('${post.likeCount}', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
                 const SizedBox(width: 16),
-                Icon(Icons.chat_bubble_outline, size: 20, color: Colors.grey[400]),
+                GestureDetector(
+                  onTap: () => showCommentSheet(
+                    context, post.id,
+                    onCommentAdded: () => setState(() => post.commentCount++),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.chat_bubble_outline, size: 20, color: Colors.grey[400]),
+                      const SizedBox(width: 4),
+                      Text(formatCommentCount(post.commentCount),
+                        style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                    ],
+                  ),
+                ),
                 const Spacer(),
                 IconButton(
                   icon: Icon(

@@ -16,6 +16,7 @@ class CommunityPost {
   final double? latitude;
   final double? longitude;
   int likeCount;
+  int commentCount;
   bool liked;
   bool saved;
   final String time;
@@ -32,6 +33,7 @@ class CommunityPost {
     this.latitude,
     this.longitude,
     required this.likeCount,
+    this.commentCount = 0,
     this.liked = false,
     this.saved = false,
     required this.time,
@@ -50,6 +52,7 @@ class CommunityPost {
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       likeCount: json['likeCount'] as int? ?? 0,
+      commentCount: json['commentCount'] as int? ?? 0,
       liked: json['liked'] as bool? ?? false,
       saved: json['saved'] as bool? ?? false,
       time: json['createdAt'] as String? ?? '',
