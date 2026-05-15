@@ -79,7 +79,46 @@ fetch(`${baseUrl}/api/v1/flowers/spots?lat=...`)
 
 ---
 
-## 5. 구현 순서
+## 6. 커뮤니티 무한 스크롤 (인피니티 스크롤)
+스크롤 끝 200px 전 도달 → 다음 10개 자동 로드 → 기존 목록에 이어 붙임
+백엔드 커서 페이지네이션 이미 구현됨. Flutter ScrollController만 추가.
+
+---
+
+## 7. 축제 이미지 로딩 최적화
+- **현재**: `firstimage`(원본, 대용량) 우선 사용
+- **변경**: `firstimage2`(썸네일) 우선 → 없으면 `firstimage`
+- **추가**: Image.network에 `cacheWidth: 300` 설정
+- 효과: 이미지 용량 감소 → 로딩 속도 개선
+
+```dart
+// tour_api_service.dart
+String get imageUrl =>
+    _normalizeImageUrl(firstImage2.isNotEmpty ? firstImage2 : firstImage);
+
+// 이미지 위젯
+Image.network(url, cacheWidth: 300, filterQuality: FilterQuality.medium)
+```
+
+---
+
+## 8. 구현 순서 (기존 5번)
+
+백엔드 커서 페이지네이션 이미 구현됨. Flutter만 추가.
+
+**동작:**
+- 스크롤이 끝 200px 전에 도달 → 다음 10개 자동 로드
+- 기존 목록 끝에 이어 붙임
+- 마지막 페이지면 더 이상 로드 안 함
+
+**구현:**
+- `ScrollController.addListener` → 끝 근처 감지
+- `_nextCursor` 상태 관리 (null이면 마지막)
+- `_isLoadingMore` 로딩 인디케이터 (하단 스피너)
+
+---
+
+## 9. (기존) 구현 순서
 1. DB SQL 실행 (Supabase)
 2. 백엔드 - 엔티티, 서비스, 엔드포인트
 3. app.js - API URL 변경
