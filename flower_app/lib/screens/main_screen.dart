@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../app_actions/app_action_runtime.dart';
 import '../services/chatbot_service.dart';
 import '../services/community_api_service.dart';
+import 'community_feed_screen.dart';
 import '../services/tour_api_service.dart';
 import '../theme/season_theme.dart';
 import '../widgets/app_bottom_navigation.dart';
@@ -640,7 +641,9 @@ class _MainScreenState extends State<MainScreen> {
         separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (BuildContext context, int index) {
           final CommunityPost post = _posts[index];
-          return Container(
+          return GestureDetector(
+            onTap: () => _goTo(context, CommunityFeedScreen(initialPostId: post.id)),
+            child: Container(
             width: 132,
             decoration: _panelDecoration(colors),
             clipBehavior: Clip.antiAlias,
@@ -685,7 +688,7 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ],
             ),
-          );
+          )); // GestureDetector 닫기
         },
       ),
     );

@@ -8,7 +8,9 @@ import 'create_flower_spot_screen.dart';
 import '../widgets/comment_bottom_sheet.dart';
 
 class CommunityFeedScreen extends StatefulWidget {
-  const CommunityFeedScreen({super.key});
+  final int? initialPostId; // 메인화면 미리보기 탭 시 해당 게시글로 스크롤
+
+  const CommunityFeedScreen({super.key, this.initialPostId});
 
   @override
   State<CommunityFeedScreen> createState() => _CommunityFeedScreenState();
@@ -19,6 +21,7 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
   bool _isLoading = true;
   String? _error;
   String _accessToken = '';
+  final Map<int, GlobalKey> _postKeys = {};
 
   @override
   void initState() {
@@ -32,10 +35,28 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
       final prefs = await SharedPreferences.getInstance();
       _accessToken = prefs.getString('accessToken') ?? '';
       final posts = await CommunityApiService.getPosts(_accessToken);
-      if (mounted) setState(() { _posts = posts; _isLoading = false; });
+      if (mounted) {
+        setState(() { _posts = posts; _isLoading = false; });
+        _scrollToInitialPost();
+      }
     } catch (e) {
       if (mounted) setState(() { _isLoading = false; _error = '게시글을 불러오지 못했습니다.'; });
     }
+  }
+
+  void _scrollToInitialPost() {
+    if (widget.initialPostId == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final key = _postKeys[widget.initialPostId!];
+      if (key?.currentContext != null) {
+        Scrollable.ensureVisible(
+          key!.currentContext!,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+          alignment: 0.1,
+        );
+      }
+    });
   }
 
   Future<void> _openCreatePost() async {
@@ -117,8 +138,14 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
                   : ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       itemCount: _posts.length,
-                      itemBuilder: (context, index) =>
-                          _buildPostCard(_posts[index], colors, index),
+                      itemBuilder: (context, index) {
+                        final post = _posts[index];
+                        _postKeys[post.id] ??= GlobalKey();
+                        return KeyedSubtree(
+                          key: _postKeys[post.id],
+                          child: _buildPostCard(post, colors, index),
+                        );
+                      },
                     ),
             ),
     );
