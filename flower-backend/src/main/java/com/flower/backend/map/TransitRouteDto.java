@@ -11,9 +11,7 @@ public final class TransitRouteDto {
             double startLat,
             double startLng,
             double endLat,
-            double endLng,
-            String startName,
-            String endName
+            double endLng
     ) {
     }
 

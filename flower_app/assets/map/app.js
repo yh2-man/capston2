@@ -970,8 +970,6 @@
         startLng: startLng,
         endLat: endLat,
         endLng: endLng,
-        startName: '현재 위치',
-        endName: destName || '도착지',
       }),
     });
 
