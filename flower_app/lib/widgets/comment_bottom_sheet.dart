@@ -153,8 +153,7 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
                 padding: EdgeInsets.only(
                   left: 12, right: 8, top: 8,
                   bottom: MediaQuery.of(context).viewInsets.bottom +
-                      MediaQuery.of(context).padding.bottom +
-                      65 + 8, // 하단 탭바 높이(65) + safe area + 여백
+                      MediaQuery.of(context).padding.bottom + 8,
                 ),
                 decoration: BoxDecoration(
                   color: Colors.white,
