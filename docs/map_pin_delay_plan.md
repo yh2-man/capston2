@@ -118,7 +118,34 @@ Image.network(url, cacheWidth: 300, filterQuality: FilterQuality.medium)
 
 ---
 
-## 9. (기존) 구현 순서
+## 9. 꽃 식별 탭 (독립 기능)
+
+게시글 올리지 않고 **혼자 꽃을 찾아볼 수 있는 전용 화면**.
+
+### 위치
+- 하단 탭에 추가 or 도감 탭 안에 버튼으로 진입
+
+### 기능
+1. 카메라 촬영 또는 갤러리에서 사진 선택
+2. Plant.id API로 꽃 자동 인식
+3. 인식 결과 표시:
+   - 꽃 이름 + 신뢰도
+   - 우리 DB(`flower_book`)에서 해당 꽃 정보 연결 → 꽃말, 키우는법, 개화시기 표시
+   - DB에 없으면 Plant.id 결과만 표시
+4. "이 꽃으로 게시글 쓰기" 버튼 → `CreateFlowerSpotScreen`으로 이동 (사진+꽃이름 전달)
+
+### Plant.id 활용
+- 백엔드 `/api/v1/flower-spots/identify` 이미 구현됨
+- 갤러리 사용 가능 (게시글과 달리 GPS 불필요)
+
+### 구현 범위
+- `FlowerIdentifyScreen` 신규 화면
+- 하단 탭 또는 도감에서 진입
+- `flower_book` DB 매칭 로직 (학명 기준)
+
+---
+
+## 10. (기존) 구현 순서
 1. DB SQL 실행 (Supabase)
 2. 백엔드 - 엔티티, 서비스, 엔드포인트
 3. app.js - API URL 변경
