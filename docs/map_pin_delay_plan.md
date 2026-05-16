@@ -147,7 +147,45 @@ Image.network(url, cacheWidth: 300, filterQuality: FilterQuality.medium)
 
 ---
 
-## 10. (기존) 구현 순서
+## 10. 미등록 꽃 자동 도감 추가 (위키피디아)
+
+Plant.id가 인식했는데 `flower_book`에 없는 꽃을 위키피디아에서 자동 수집해 DB에 추가.
+
+### 흐름
+```
+Plant.id 인식 → flower_book에서 학명 검색
+    ↓ 없으면
+위키피디아 한국어 API로 꽃 정보 수집
+    ↓
+flower_book에 자동 저장 (source: 'WIKIPEDIA', status: 'AUTO')
+    ↓
+관리자가 나중에 수동 보완 가능 (status: 'COMPLETE')
+```
+
+### 수집 내용 (위키피디아)
+- 꽃 이름 (한국어 일반명)
+- 설명 (`extract` 필드)
+- 썸네일 이미지 → Oracle Storage 저장
+- 학명 (Plant.id 결과 그대로)
+
+### 위키피디아 API
+```
+GET https://ko.wikipedia.org/api/rest_v1/page/summary/{꽃이름}
+→ title, extract, thumbnail.source
+```
+
+### 주의
+- 이미 flower_book에 있으면 건너뜀 (중복 방지)
+- 위키피디아에도 없으면 "기타"로만 저장
+- 꽃말, 키우는법은 없을 수 있음 (자동 수집 한계)
+
+### 카테고리 매핑
+- 학명 첫 단어(속명)로 `flower_species_mapping` 테이블 참조
+- 매핑 없으면 "기타" 카테고리
+
+---
+
+## 11. (기존) 구현 순서
 1. DB SQL 실행 (Supabase)
 2. 백엔드 - 엔티티, 서비스, 엔드포인트
 3. app.js - API URL 변경
