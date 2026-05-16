@@ -132,7 +132,9 @@ Image.network(url, cacheWidth: 300, filterQuality: FilterQuality.medium)
    - 꽃 이름 + 신뢰도
    - 우리 DB(`flower_book`)에서 해당 꽃 정보 연결 → 꽃말, 키우는법, 개화시기 표시
    - DB에 없으면 Plant.id 결과만 표시
-4. "이 꽃으로 게시글 쓰기" 버튼 → `CreateFlowerSpotScreen`으로 이동 (사진+꽃이름 전달)
+4. 결과 화면 하단 버튼 2개:
+   - "게시글 쓰기" → `CreateFlowerSpotScreen`으로 이동 (사진 + 꽃이름 자동 입력)
+   - "도감에서 보기" → `FlowerBookPage`로 이동 + 해당 꽃 이름으로 자동 검색
 
 ### Plant.id 활용
 - 백엔드 `/api/v1/flower-spots/identify` 이미 구현됨
