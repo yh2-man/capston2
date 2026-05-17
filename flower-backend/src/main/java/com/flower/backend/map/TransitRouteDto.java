@@ -15,6 +15,22 @@ public final class TransitRouteDto {
     ) {
     }
 
+    public record RouteRequest(
+            double startLat,
+            double startLng,
+            double endLat,
+            double endLng,
+            String mode
+    ) {
+    }
+
+    public record RouteResponse(
+            String mode,
+            Summary summary,
+            List<Leg> legs
+    ) {
+    }
+
     public record TransitRouteResponse(
             Summary summary,
             List<Leg> legs
@@ -22,12 +38,12 @@ public final class TransitRouteDto {
     }
 
     public record Summary(
-            int totalTimeSec,
-            int totalDistanceM,
-            int totalWalkTimeSec,
-            int totalWalkDistanceM,
-            int transferCount,
-            int totalFare
+            Integer totalTimeSec,
+            Integer totalDistanceM,
+            Integer totalWalkTimeSec,
+            Integer totalWalkDistanceM,
+            Integer transferCount,
+            Integer totalFare
     ) {
     }
 
