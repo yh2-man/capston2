@@ -35,6 +35,10 @@ spring:
         format_sql: false
     show-sql: false
 
+app:
+  dev-login:
+    enabled: false
+
 
 
 
