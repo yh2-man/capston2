@@ -190,7 +190,7 @@
         lng: center.lng,
         radius: state.radius,
       });
-      const response = await fetch(`${baseUrl}/api/v1/flower-spots?${params.toString()}`);
+      const response = await fetch(`${baseUrl}/flower-spots?${params.toString()}`);
       if (!response.ok) return [];
       const body = await response.json();
       const posts = body.data?.posts ?? (Array.isArray(body) ? body : []);
