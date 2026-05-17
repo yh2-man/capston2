@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/season_theme.dart';
 import '../services/flower_spot_api_service.dart';
+import '../utils/location_permission_helper.dart';
 
 class CreateFlowerSpotScreen extends StatefulWidget {
   const CreateFlowerSpotScreen({super.key});
@@ -102,6 +103,7 @@ class _CreateFlowerSpotScreenState extends State<CreateFlowerSpotScreen> {
         final pos = await Geolocator.getCurrentPosition(
           locationSettings: const LocationSettings(accuracy: LocationAccuracy.best),
         );
+        if (mounted) await promptAlwaysLocation(context);
         final hadGalleryImage = _imageFromGallery;
         setState(() {
           _shareLocation = true;

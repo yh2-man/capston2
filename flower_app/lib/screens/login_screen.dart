@@ -4,6 +4,7 @@ import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/season_theme.dart';
 import '../services/auth_api_service.dart';
+import '../utils/location_permission_helper.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -74,6 +75,8 @@ class _LoginScreenState extends State<LoginScreen> {
             );
           }
 
+          if (!mounted) return;
+          await promptAlwaysLocation(context, firstTime: true);
           if (!mounted) return;
           Navigator.pushReplacementNamed(context, '/main');
         }

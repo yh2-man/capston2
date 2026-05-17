@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../app_actions/app_action_runtime.dart';
@@ -50,7 +49,6 @@ class _MainScreenState extends State<MainScreen> {
     _loadPosts();
     _loadFestivals();
     _loadUserInfo();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _promptAlwaysLocation());
   }
 
   Future<void> _loadUserInfo() async {
@@ -67,41 +65,6 @@ class _MainScreenState extends State<MainScreen> {
     _chatController.dispose();
     _festivalPageController.dispose();
     super.dispose();
-  }
-
-  Future<void> _promptAlwaysLocation() async {
-    if (!mounted) return;
-    final permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.always ||
-        permission == LocationPermission.deniedForever ||
-        permission == LocationPermission.denied) return;
-    // whileInUse 상태 → 항상 허용 유도
-    if (!mounted) return;
-    final prefs = await SharedPreferences.getInstance();
-    if (prefs.getBool('alwaysLocationPromptDone') == true) return;
-    if (!mounted) return;
-    final agreed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('근처 꽃 알림 받기 🌸'),
-        content: const Text(
-          '내 주변에 새 꽃 게시글이 올라오면 알림을 드려요.\n'
-          '위치 권한을 \'항상 허용\'으로 설정하면 앱을 닫아도 알림을 받을 수 있어요.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('괜찮아요'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('설정하기'),
-          ),
-        ],
-      ),
-    );
-    await prefs.setBool('alwaysLocationPromptDone', true);
-    if (agreed == true) await Geolocator.openAppSettings();
   }
 
   Future<void> _loadPosts() async {
