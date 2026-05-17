@@ -4,11 +4,16 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
 import 'screens/profile_setup_screen.dart';
 import 'theme/season_theme.dart';
+import 'api_config.dart';
+
+final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,8 +34,10 @@ Future<void> main() async {
     }
   }
 
+  await _initLocalNotifications();
   await _initFcm(prefs);
   await _requestLocationPermission();
+  if (hasToken) await _sendLocationToServer(prefs);
 
   runApp(OurTApp(hasToken: hasToken));
 }
@@ -58,18 +65,56 @@ Future<void> _requestLocationPermission() async {
   } catch (_) {}
 }
 
+Future<void> _initLocalNotifications() async {
+  const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+  await _localNotifications.initialize(const InitializationSettings(android: android));
+}
+
 Future<void> _initFcm(SharedPreferences prefs) async {
   try {
     final messaging = FirebaseMessaging.instance;
-
-    // 알림 권한 요청
     await messaging.requestPermission();
 
-    // FCM 토큰 받기
     final fcmToken = await messaging.getToken();
     if (fcmToken != null) {
       await prefs.setString('fcmToken', fcmToken);
     }
+
+    // 포그라운드 알림 처리
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      final notification = message.notification;
+      if (notification == null) return;
+      _localNotifications.show(
+        notification.hashCode,
+        notification.title,
+        notification.body,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'ourt_channel', 'OurT 알림',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+        ),
+      );
+    });
+  } catch (_) {}
+}
+
+Future<void> _sendLocationToServer(SharedPreferences prefs) async {
+  try {
+    final permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) return;
+    final pos = await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+    );
+    final token = prefs.getString('accessToken') ?? '';
+    if (token.isEmpty) return;
+    await http.post(
+      Uri.parse('${ApiConfig.backendBaseUrl()}/api/v1/auth/location'),
+      headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+      body: jsonEncode({'latitude': pos.latitude, 'longitude': pos.longitude}),
+    ).timeout(const Duration(seconds: 5));
   } catch (_) {}
 }
 

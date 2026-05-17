@@ -3,6 +3,7 @@ package com.flower.backend.community;
 import com.flower.backend.auth.User;
 import com.flower.backend.auth.UserRepository;
 import com.flower.backend.community.CommunityDto.*;
+import com.flower.backend.fcm.FcmService;
 import com.flower.backend.storage.StorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -26,6 +27,7 @@ public class CommunityService {
     private final UserRepository userRepository;
     private final StorageService storageService;
     private final CommentRepository commentRepository;
+    private final FcmService fcmService;
 
     @Transactional(readOnly = true)
     public FeedResponse getFeed(Long userId, Long cursor, int limit) {
@@ -124,7 +126,17 @@ public class CommunityService {
                 .plantConfidence(plantConfidence).notifyOthers(notifyOthers)
                 .build();
 
-        return toResponse(postRepository.save(post), Set.of(), Set.of());
+        CommunityPost saved = postRepository.save(post);
+
+        // 반경 1km 내 사용자에게 근처 꽃 게시글 알림
+        if (latitude != null && longitude != null) {
+            userRepository.findNearbyUsersWithFcmToken(latitude, longitude, 1000, userId)
+                    .forEach(u -> fcmService.send(u.getFcmToken(),
+                            "근처에 새 꽃 발견! 🌺",
+                            (plantName != null ? plantName : "꽃") + " - " + (address != null ? address : "내 주변")));
+        }
+
+        return toResponse(saved, Set.of(), Set.of());
     }
 
     @Transactional(readOnly = true)
@@ -173,6 +185,13 @@ public class CommunityService {
         commentRepository.save(comment);
         post.increaseCommentCount();
         postRepository.save(post);
+
+        // 게시글 작성자에게 댓글 알림 (본인 댓글 제외)
+        if (!post.getUser().getId().equals(userId)) {
+            fcmService.send(post.getUser().getFcmToken(),
+                    "새 댓글이 달렸어요 🌸",
+                    user.getNickname() + ": " + content);
+        }
 
         return CommunityDto.CommentResponse.builder()
                 .id(comment.getId())
