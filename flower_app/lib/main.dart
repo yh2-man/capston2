@@ -18,7 +18,7 @@ final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotifica
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
-  await Firebase.initializeApp();
+  try { await Firebase.initializeApp(); } catch (_) {}
 
   final prefs = await SharedPreferences.getInstance();
   final String? token = prefs.getString('accessToken');

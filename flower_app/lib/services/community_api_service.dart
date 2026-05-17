@@ -41,7 +41,7 @@ class CommunityPost {
 
   factory CommunityPost.fromJson(Map<String, dynamic> json) {
     return CommunityPost(
-      id: json['id'] as int,
+      id: (json['id'] as num).toInt(),
       userId: json['userId'] as int? ?? 0,
       user: json['nickname'] as String? ?? '익명',
       profileImageUrl: json['profileImageUrl'] as String?,

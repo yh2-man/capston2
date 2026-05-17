@@ -69,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
           // FCM 토큰 백엔드에 전송
           final fcmToken = prefs.getString('fcmToken');
           if (fcmToken != null && accessToken.isNotEmpty) {
-            AuthApiService.saveFcmToken(
+            await AuthApiService.saveFcmToken(
               accessToken: accessToken,
               fcmToken: fcmToken,
             );
