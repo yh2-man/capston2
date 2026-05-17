@@ -19,14 +19,33 @@ class CommunityFeedScreen extends StatefulWidget {
 class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
   List<CommunityPost> _posts = [];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasNext = false;
+  int? _nextCursor;
   String? _error;
   String _accessToken = '';
   final Map<int, GlobalKey> _postKeys = {};
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _loadPosts();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_hasNext || _isLoadingMore) return;
+    final pos = _scrollController.position;
+    if (pos.pixels >= pos.maxScrollExtent - 200) {
+      _loadMorePosts();
+    }
   }
 
   Future<void> _loadPosts() async {
@@ -34,13 +53,36 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       _accessToken = prefs.getString('accessToken') ?? '';
-      final posts = await CommunityApiService.getPosts(_accessToken);
+      final result = await CommunityApiService.getPosts(_accessToken);
       if (mounted) {
-        setState(() { _posts = posts; _isLoading = false; });
+        setState(() {
+          _posts = result.posts;
+          _nextCursor = result.nextCursor;
+          _hasNext = result.hasNext;
+          _isLoading = false;
+        });
         _scrollToInitialPost();
       }
     } catch (e) {
       if (mounted) setState(() { _isLoading = false; _error = '게시글을 불러오지 못했습니다.'; });
+    }
+  }
+
+  Future<void> _loadMorePosts() async {
+    if (_isLoadingMore || !_hasNext || _nextCursor == null) return;
+    if (mounted) setState(() => _isLoadingMore = true);
+    try {
+      final result = await CommunityApiService.getPosts(_accessToken, cursor: _nextCursor);
+      if (mounted) {
+        setState(() {
+          _posts.addAll(result.posts);
+          _nextCursor = result.nextCursor;
+          _hasNext = result.hasNext;
+          _isLoadingMore = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingMore = false);
     }
   }
 
@@ -64,7 +106,7 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
       context,
       MaterialPageRoute(builder: (_) => const CreateFlowerSpotScreen()),
     );
-    if (result == true) _loadPosts(); // 게시 후 피드 새로고침
+    if (result == true) _loadPosts();
   }
 
   Future<void> _toggleLike(int index) async {
@@ -136,9 +178,16 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
               child: _posts.isEmpty
                   ? _buildEmpty(colors)
                   : ListView.builder(
+                      controller: _scrollController,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      itemCount: _posts.length,
+                      itemCount: _posts.length + (_hasNext ? 1 : 0),
                       itemBuilder: (context, index) {
+                        if (index == _posts.length) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            child: Center(child: CircularProgressIndicator(color: colors.primary)),
+                          );
+                        }
                         final post = _posts[index];
                         _postKeys[post.id] ??= GlobalKey();
                         return KeyedSubtree(

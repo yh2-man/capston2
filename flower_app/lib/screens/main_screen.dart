@@ -70,7 +70,7 @@ class _MainScreenState extends State<MainScreen> {
   Future<void> _loadPosts() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String token = prefs.getString('accessToken') ?? '';
-    final List<CommunityPost> posts = await CommunityApiService.getPosts(token);
+    final posts = (await CommunityApiService.getPosts(token)).posts;
     if (!mounted) return;
     setState(() {
       _posts = posts.take(5).toList();
@@ -472,6 +472,8 @@ class _MainScreenState extends State<MainScreen> {
                 ? Image.network(
                     festival.imageUrl,
                     fit: BoxFit.cover,
+                    cacheWidth: 300,
+                    filterQuality: FilterQuality.medium,
                     errorBuilder: (_, __, ___) =>
                         _festivalBannerPlaceholder(colors),
                   )

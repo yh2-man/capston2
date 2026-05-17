@@ -1000,6 +1000,8 @@ $app
                       ? Image.network(
                           festival.imageUrl,
                           fit: BoxFit.cover,
+                          cacheWidth: 300,
+                          filterQuality: FilterQuality.medium,
                           errorBuilder: (_, __, ___) {
                             return _festivalPlaceholder(colors);
                           },

@@ -248,7 +248,7 @@ class FestivalData {
       <String>[addr1, addr2].where((String e) => e.isNotEmpty).join(' ');
 
   String get imageUrl =>
-      _normalizeImageUrl(firstImage.isNotEmpty ? firstImage : firstImage2);
+      _normalizeImageUrl(firstImage2.isNotEmpty ? firstImage2 : firstImage);
 
   String get periodString {
     if (eventStartDate.isEmpty) return '';

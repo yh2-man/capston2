@@ -60,10 +60,18 @@ class CommunityPost {
   }
 }
 
+class FeedResult {
+  final List<CommunityPost> posts;
+  final int? nextCursor;
+  final bool hasNext;
+
+  const FeedResult({required this.posts, this.nextCursor, this.hasNext = false});
+}
+
 class CommunityApiService {
   static String get _baseUrl => '${ApiConfig.backendBaseUrl()}/api/v1/community';
 
-  static Future<List<CommunityPost>> getPosts(String accessToken, {int? cursor}) async {
+  static Future<FeedResult> getPosts(String accessToken, {int? cursor}) async {
     try {
       final uri = Uri.parse('$_baseUrl/posts').replace(
         queryParameters: {
@@ -78,11 +86,17 @@ class CommunityApiService {
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         final data = body['data'] as Map<String, dynamic>;
-        final posts = data['posts'] as List;
-        return posts.map((e) => CommunityPost.fromJson(e as Map<String, dynamic>)).toList();
+        final posts = (data['posts'] as List)
+            .map((e) => CommunityPost.fromJson(e as Map<String, dynamic>))
+            .toList();
+        return FeedResult(
+          posts: posts,
+          nextCursor: data['nextCursor'] as int?,
+          hasNext: data['hasNext'] as bool? ?? false,
+        );
       }
     } catch (e) { debugPrint('[API Error] $e'); }
-    return [];
+    return const FeedResult(posts: []);
   }
 
   static Future<CommunityPost?> createPost({
