@@ -27,9 +27,13 @@ spring:
     static-path-pattern: /uploads/**
 
 # 로컬 개발용 기본값 (운영에서는 환경변수로 대체됨)
-KAKAO_CLIENT_ID: 5e1aa770b3e4ae2c226e140721223288
-KAKAO_CLIENT_SECRET: 17s81YP5cCJ1WPmqpwKfLo1SV4MF62d7
-JWT_SECRET: this-is-a-very-secure-and-long-secret-key-for-jwt-signing
+KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID:}
+KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:}
+JWT_SECRET: ${JWT_SECRET:change-me-for-local-development-only}
+
+app:
+  dev-login:
+    enabled: ${DEV_LOGIN_ENABLED:true}
 
 storage:
   upload-dir: uploads
