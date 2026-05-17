@@ -141,7 +141,7 @@ class KakaoMapScreenState extends State<KakaoMapScreen> {
 
       final Position position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
+          accuracy: LocationAccuracy.best,
         ),
       );
 
@@ -389,7 +389,7 @@ $app
 
       final Position position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
+          accuracy: LocationAccuracy.best,
         ),
       );
       if (!mounted) return;

@@ -100,7 +100,7 @@ class _CreateFlowerSpotScreenState extends State<CreateFlowerSpotScreen> {
           return;
         }
         final pos = await Geolocator.getCurrentPosition(
-          locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+          locationSettings: const LocationSettings(accuracy: LocationAccuracy.best),
         );
         final hadGalleryImage = _imageFromGallery;
         setState(() {
