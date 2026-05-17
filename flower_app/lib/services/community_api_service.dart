@@ -45,7 +45,7 @@ class CommunityPost {
       userId: json['userId'] as int? ?? 0,
       user: json['nickname'] as String? ?? '익명',
       profileImageUrl: json['profileImageUrl'] as String?,
-      content: json['content'] as String,
+      content: json['content'] as String? ?? '',
       flowerSpecies: json['flowerSpecies'] as String?,
       imageUrl: json['imageUrl'] as String?,
       address: json['address'] as String?,
