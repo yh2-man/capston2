@@ -60,8 +60,10 @@ Future<void> _requestLocationPermission() async {
   try {
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
-      await Geolocator.requestPermission();
+      permission = await Geolocator.requestPermission();
     }
+    // Android 10+ : whileInUse 후 항상 허용은 설정에서만 가능 → 별도 요청 불필요
+    // 항상 허용 여부는 _sendLocationToServer에서 체크
   } catch (_) {}
 }
 
@@ -103,8 +105,8 @@ Future<void> _initFcm(SharedPreferences prefs) async {
 Future<void> _sendLocationToServer(SharedPreferences prefs) async {
   try {
     final permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) return;
+    // 항상 허용(always)인 사용자만 위치를 서버에 저장 → 근처 알림 대상
+    if (permission != LocationPermission.always) return;
     final pos = await Geolocator.getCurrentPosition(
       locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
     );
