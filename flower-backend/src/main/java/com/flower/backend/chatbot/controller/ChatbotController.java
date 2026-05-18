@@ -3,7 +3,7 @@ package com.flower.backend.chatbot.controller;
 import com.flower.backend.chatbot.dto.ChatMessageRequest;
 import com.flower.backend.chatbot.dto.ChatMessageResponse;
 import com.flower.backend.chatbot.service.ChatbotService;
-import com.flower.backend.common.dto.ApiResponse;
+import com.flower.backend.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;

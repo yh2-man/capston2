@@ -71,7 +71,7 @@ public class CommunityService {
                 .build();
 
         CommunityPost saved = postRepository.save(post);
-        return toResponse(saved, Set.of(), Set.of());
+        return toResponseWithoutContext(saved);
     }
 
     @Transactional
@@ -130,15 +130,11 @@ public class CommunityService {
 
         CommunityPost saved = postRepository.save(post);
 
-        // 반경 1km 내 사용자에게 근처 꽃 게시글 알림
         if (latitude != null && longitude != null) {
-            userRepository.findNearbyUsersWithFcmToken(latitude, longitude, 1000, userId)
-                    .forEach(u -> fcmService.send(u.getFcmToken(),
-                            "근처에 새 꽃 발견! 🌺",
-                            (plantName != null ? plantName : "꽃") + " - " + (address != null ? address : "내 주변")));
+            notifyNearbyUsersOfNewFlowerSpot(userId, latitude, longitude, plantName, address);
         }
 
-        return toResponse(saved, Set.of(), Set.of());
+        return toResponseWithoutContext(saved);
     }
 
     @Transactional(readOnly = true)
@@ -155,7 +151,7 @@ public class CommunityService {
         Long nextCursor = hasNext ? posts.get(posts.size() - 1).getId() : null;
 
         return FeedResponse.builder()
-                .posts(posts.stream().map(p -> toResponse(p, Set.of(), Set.of())).collect(Collectors.toList()))
+                .posts(posts.stream().map(this::toResponseWithoutContext).collect(Collectors.toList()))
                 .nextCursor(nextCursor).hasNext(hasNext).build();
     }
 
@@ -187,12 +183,7 @@ public class CommunityService {
         commentRepository.save(comment);
         postRepository.incrementCommentCount(postId);
 
-        // 게시글 작성자에게 댓글 알림 (본인 댓글 제외)
-        if (!post.getUser().getId().equals(userId)) {
-            fcmService.send(post.getUser().getFcmToken(),
-                    "새 댓글이 달렸어요 🌸",
-                    user.getNickname() + ": " + content);
-        }
+        notifyPostAuthorOfComment(post, user, content);
 
         return CommunityDto.CommentResponse.builder()
                 .id(comment.getId())
@@ -217,6 +208,28 @@ public class CommunityService {
         if (updated == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다.");
         }
+    }
+
+    // 사용자 컨텍스트(liked/saved)가 없는 단건 응답 생성 (생성/수정 직후 등)
+    private PostResponse toResponseWithoutContext(CommunityPost post) {
+        return toResponse(post, Set.of(), Set.of());
+    }
+
+    // 게시글 작성자에게 댓글 알림 발송 (본인 댓글이면 스킵)
+    private void notifyPostAuthorOfComment(CommunityPost post, User commenter, String content) {
+        if (post.getUser().getId().equals(commenter.getId())) return;
+        fcmService.send(post.getUser().getFcmToken(),
+                "새 댓글이 달렸어요 🌸",
+                commenter.getNickname() + ": " + content);
+    }
+
+    // 반경 내 사용자에게 새 꽃 게시글 알림 (FCM 토큰/위치 보유자만)
+    private void notifyNearbyUsersOfNewFlowerSpot(Long authorUserId, double lat, double lng,
+                                                   String plantName, String address) {
+        userRepository.findNearbyUsersWithFcmToken(lat, lng, 1000, authorUserId)
+                .forEach(u -> fcmService.send(u.getFcmToken(),
+                        "근처에 새 꽃 발견! 🌺",
+                        (plantName != null ? plantName : "꽃") + " - " + (address != null ? address : "내 주변")));
     }
 
     private PostResponse toResponse(CommunityPost post, Set<Long> likedIds, Set<Long> savedIds) {
