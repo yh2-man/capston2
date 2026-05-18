@@ -3,13 +3,14 @@ package com.flower.backend.fcm;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
 import jakarta.annotation.PostConstruct;
 import java.io.FileInputStream;
-import java.io.IOException;
 
+@Slf4j
 @Configuration
 public class FcmConfig {
 
@@ -25,8 +26,9 @@ public class FcmConfig {
                     .setCredentials(GoogleCredentials.fromStream(serviceAccount))
                     .build();
             FirebaseApp.initializeApp(options);
-        } catch (IOException e) {
-            throw new RuntimeException("Firebase 초기화 실패: " + serviceAccountPath, e);
+            log.info("Firebase 초기화 완료");
+        } catch (Exception e) {
+            log.warn("Firebase 초기화 실패 — FCM 알림이 비활성화됩니다: {}", e.getMessage());
         }
     }
 }
