@@ -53,8 +53,16 @@ public class NongsaroImportService {
                     Thread.sleep(100); // API 부하 방지 (트랜잭션 밖)
                     saveFlower(item, detail, categories); // DB 저장만 트랜잭션
                     saved++;
-                } catch (Exception e) {
-                    log.warn("꽃 저장 실패 - dataNo={}, name={}: {}", item.dataNo, item.flowNm, e.getMessage());
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    log.warn("임포트 중단 - dataNo={}", item.dataNo);
+                    return new ImportResult(saved, skipped);
+                } catch (org.springframework.web.client.RestClientException e) {
+                    log.warn("외부 API 호출 실패 - dataNo={}, name={}: {}", item.dataNo, item.flowNm, e.getMessage());
+                } catch (org.springframework.dao.DataAccessException e) {
+                    log.error("DB 저장 실패 - dataNo={}, name={}: {}", item.dataNo, item.flowNm, e.getMessage());
+                } catch (RuntimeException e) {
+                    log.error("예상치 못한 오류 - dataNo={}, name={}: {}", item.dataNo, item.flowNm, e.getMessage(), e);
                 }
             }
         }

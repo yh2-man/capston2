@@ -45,13 +45,20 @@ Future<void> main() async {
 bool _isTokenExpired(String token) {
   try {
     final parts = token.split('.');
-    if (parts.length != 3) return true;
+    if (parts.length != 3) {
+      debugPrint('[Auth] JWT 형식 오류: parts=${parts.length}');
+      return true;
+    }
     final payload = base64Url.decode(base64Url.normalize(parts[1]));
     final data = jsonDecode(utf8.decode(payload)) as Map<String, dynamic>;
     final exp = data['exp'] as int?;
-    if (exp == null) return true;
+    if (exp == null) {
+      debugPrint('[Auth] JWT exp 필드 없음');
+      return true;
+    }
     return DateTime.fromMillisecondsSinceEpoch(exp * 1000).isBefore(DateTime.now());
-  } catch (_) {
+  } catch (e) {
+    debugPrint('[Auth] JWT 파싱 실패: $e');
     return true;
   }
 }

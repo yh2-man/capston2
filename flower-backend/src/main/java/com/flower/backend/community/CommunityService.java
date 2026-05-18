@@ -7,9 +7,11 @@ import com.flower.backend.fcm.FcmService;
 import com.flower.backend.storage.StorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -56,7 +58,7 @@ public class CommunityService {
     public PostResponse createPost(Long userId, String content, String flowerSpecies,
                                    MultipartFile image, Double latitude, Double longitude, String address) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
         String imageUrl = null;
         if (image != null && !image.isEmpty()) {
@@ -76,7 +78,7 @@ public class CommunityService {
     public Map<String, Object> toggleLike(Long userId, Long postId) {
         PostLikeId likeId = new PostLikeId(userId, postId);
         CommunityPost post = postRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."));
 
         boolean liked;
         if (likeRepository.existsById(likeId)) {
@@ -112,7 +114,7 @@ public class CommunityService {
                                           Double latitude, Double longitude, String address,
                                           boolean notifyOthers) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
         String imageUrl = null;
         if (image != null && !image.isEmpty()) {
@@ -177,9 +179,9 @@ public class CommunityService {
     @Transactional
     public CommunityDto.CommentResponse addComment(Long userId, Long postId, String content) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
         CommunityPost post = postRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."));
 
         Comment comment = Comment.builder().post(post).user(user).content(content).build();
         commentRepository.save(comment);
@@ -206,12 +208,15 @@ public class CommunityService {
     @Transactional
     public void deleteComment(Long userId, Long postId, Long commentId) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new RuntimeException("댓글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."));
         if (!comment.getUser().getId().equals(userId)) {
-            throw new RuntimeException("본인 댓글만 삭제할 수 있습니다.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 댓글만 삭제할 수 있습니다.");
         }
         commentRepository.delete(comment);
-        postRepository.decrementCommentCount(postId);
+        int updated = postRepository.decrementCommentCount(postId);
+        if (updated == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다.");
+        }
     }
 
     private PostResponse toResponse(CommunityPost post, Set<Long> likedIds, Set<Long> savedIds) {

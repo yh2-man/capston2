@@ -25,6 +25,8 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
   String? _error;
   String _accessToken = '';
   final Map<int, GlobalKey> _postKeys = {};
+  final Set<int> _togglingLike = <int>{};
+  final Set<int> _togglingSave = <int>{};
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -111,6 +113,8 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
 
   Future<void> _toggleLike(int index) async {
     final post = _posts[index];
+    if (_togglingLike.contains(post.id)) return;
+    _togglingLike.add(post.id);
     final originalLiked = post.liked;
     final originalCount = post.likeCount;
     setState(() {
@@ -124,17 +128,23 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
         post.liked = originalLiked;
         post.likeCount = originalCount;
       });
+    } finally {
+      _togglingLike.remove(post.id);
     }
   }
 
   Future<void> _toggleSave(int index) async {
     final post = _posts[index];
+    if (_togglingSave.contains(post.id)) return;
+    _togglingSave.add(post.id);
     final original = post.saved;
     setState(() => post.saved = !post.saved);
     try {
       await CommunityApiService.toggleSave(_accessToken, post.id);
     } catch (_) {
       if (mounted) setState(() => post.saved = original);
+    } finally {
+      _togglingSave.remove(post.id);
     }
   }
 

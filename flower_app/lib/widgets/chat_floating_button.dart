@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:uuid/uuid.dart';
 
 import '../app_actions/app_action_runtime.dart';
@@ -21,9 +22,9 @@ class _ChatFloatingButtonState extends State<ChatFloatingButton> {
   static const MethodChannel _speechChannel = MethodChannel(
     'flower_app/speech',
   );
-  static final List<_FloatingChatMessage> _messages = [];
-  static final String _sessionId = const Uuid().v4();
 
+  final List<_FloatingChatMessage> _messages = [];
+  final String _sessionId = const Uuid().v4();
   final TextEditingController _controller = TextEditingController();
   final ChatbotService _chatbotService = ChatbotService();
   bool _showComposer = false;
@@ -65,12 +66,14 @@ class _ChatFloatingButtonState extends State<ChatFloatingButton> {
       _showHistory = true;
     });
 
+    final position = await _getCurrentPositionOrNull();
+
     _streamSubscription = _chatbotService
         .streamMessage(
           message: text,
           sessionId: _sessionId,
-          lat: 37.5665,
-          lng: 126.9780,
+          lat: position?.latitude ?? 37.5665,
+          lng: position?.longitude ?? 126.9780,
           cancelToken: _cancelToken,
         )
         .listen(
@@ -250,6 +253,21 @@ class _ChatFloatingButtonState extends State<ChatFloatingButton> {
       if (!mounted) return;
       setState(() => _isListening = false);
       _showSnackBar('음성 입력을 사용할 수 없습니다.');
+    }
+  }
+
+  Future<Position?> _getCurrentPositionOrNull() async {
+    try {
+      final permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return null;
+      }
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      ).timeout(const Duration(seconds: 3));
+    } catch (_) {
+      return null;
     }
   }
 
