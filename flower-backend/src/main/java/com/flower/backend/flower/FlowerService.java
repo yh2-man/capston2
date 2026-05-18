@@ -17,9 +17,13 @@ public class FlowerService {
     private final FlowerSpeciesMappingRepository mappingRepository;
 
     public List<FlowerDto.CategoryResponse> getCategories() {
-        return categoryRepository.findAll().stream()
-                .map(c -> FlowerDto.CategoryResponse.from(c,
-                        flowerRepository.findByCategoryId(c.getId()).size()))
+        return categoryRepository.findAllWithFlowerCount().stream()
+                .map(v -> FlowerDto.CategoryResponse.builder()
+                        .id(v.getId())
+                        .name(v.getName())
+                        .emoji(v.getEmoji())
+                        .flowerCount(v.getFlowerCount())
+                        .build())
                 .toList();
     }
 

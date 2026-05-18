@@ -26,10 +26,11 @@ spring:
   mvc:
     static-path-pattern: /uploads/**
 
-# 로컬 개발용 기본값 (운영에서는 환경변수로 대체됨)
-KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID:}
-KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:}
-JWT_SECRET: ${JWT_SECRET:change-me-for-local-development-only}
+# 운영 환경변수는 GitHub Secrets에서 주입됨
+# 로컬에서는 비워두거나 직접 export하여 사용
+KAKAO_CLIENT_ID:
+KAKAO_CLIENT_SECRET:
+JWT_SECRET: change-me-for-local-development-only
 
 app:
   dev-login:
