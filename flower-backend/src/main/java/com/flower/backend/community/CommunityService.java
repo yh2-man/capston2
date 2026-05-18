@@ -183,8 +183,7 @@ public class CommunityService {
 
         Comment comment = Comment.builder().post(post).user(user).content(content).build();
         commentRepository.save(comment);
-        post.increaseCommentCount();
-        postRepository.save(post);
+        postRepository.incrementCommentCount(postId);
 
         // 게시글 작성자에게 댓글 알림 (본인 댓글 제외)
         if (!post.getUser().getId().equals(userId)) {
@@ -212,10 +211,7 @@ public class CommunityService {
             throw new RuntimeException("본인 댓글만 삭제할 수 있습니다.");
         }
         commentRepository.delete(comment);
-        postRepository.findById(postId).ifPresent(p -> {
-            p.decreaseCommentCount();
-            postRepository.save(p);
-        });
+        postRepository.decrementCommentCount(postId);
     }
 
     private PostResponse toResponse(CommunityPost post, Set<Long> likedIds, Set<Long> savedIds) {

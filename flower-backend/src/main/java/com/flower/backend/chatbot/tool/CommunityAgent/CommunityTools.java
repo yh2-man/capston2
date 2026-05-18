@@ -35,7 +35,7 @@ public class CommunityTools {
 
         try {
             List<Post> results = sanitized.isBlank()
-                    ? postRepository.findAll().stream().limit(5).toList()
+                    ? postRepository.findRecent(5)
                     : postRepository.searchByKeyword(sanitized).stream().limit(5).toList();
 
             return ToolResult.builder()

@@ -23,17 +23,17 @@ public class PostRepositoryImpl implements PostRepository {
     }
 
     @Override
-    public List<Post> searchByKeyword(String keyword) {
-        return communityPostRepository.findAll().stream()
-                .filter(p -> matches(p, keyword))
+    public List<Post> findRecent(int limit) {
+        return communityPostRepository.findFeed(PageRequest.of(0, limit)).stream()
                 .map(this::toPost)
                 .toList();
     }
 
-    private boolean matches(CommunityPost p, String keyword) {
-        String k = keyword.toLowerCase();
-        return (p.getContent() != null && p.getContent().toLowerCase().contains(k))
-                || (p.getFlowerSpecies() != null && p.getFlowerSpecies().toLowerCase().contains(k));
+    @Override
+    public List<Post> searchByKeyword(String keyword) {
+        return communityPostRepository.searchByKeyword(keyword, PageRequest.of(0, 20)).stream()
+                .map(this::toPost)
+                .toList();
     }
 
     private Post toPost(CommunityPost p) {

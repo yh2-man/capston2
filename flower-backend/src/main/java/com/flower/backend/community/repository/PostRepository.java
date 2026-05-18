@@ -6,5 +6,6 @@ import java.util.List;
 
 public interface PostRepository {
     List<Post> findAll();
+    List<Post> findRecent(int limit);
     List<Post> searchByKeyword(String keyword);
 }
