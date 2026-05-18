@@ -252,8 +252,8 @@
       const response = await fetch(`${baseUrl}/flower-spots?${params.toString()}`);
       if (!response.ok) return [];
       const body = await response.json();
-      const data = Array.isArray(body) ? body : body.data;
-      return normalizeFlowers(data || []);
+      const posts = body.data?.posts ?? (Array.isArray(body) ? body : []);
+      return normalizeFlowers(posts);
     } catch (error) {
       console.warn('Flower API is unavailable.', error);
       return [];
