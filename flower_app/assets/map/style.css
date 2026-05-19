@@ -84,18 +84,18 @@ body {
   max-height: calc(100vh - var(--route-panel-top, 150px) - 20px);
   overflow: hidden;
   border-radius: 12px;
-  padding: 6px 10px;
+  padding: 4px 10px;
 }
 
 .route-panel .panel-row {
   gap: 8px;
-  min-height: 36px;
+  /* min-height 제거 — 내용이 한 줄이면 한 줄 높이만큼만 차지 */
 }
 
 .route-panel .panel-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
   font-size: 10px;
 }
 
@@ -123,19 +123,19 @@ body {
 }
 
 .route-panel .panel-close {
-  height: 24px;
-  min-width: 40px;
+  height: 22px;
+  min-width: 36px;
   padding: 0 8px;
   font-size: 11px;
 }
 
 .route-panel .panel-close-x {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: #f2f4f3;
   color: var(--muted);
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1;
   display: grid;
   place-items: center;
