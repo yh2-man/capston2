@@ -81,6 +81,7 @@ jobs:
             echo "NONGSARO_API_KEY=${{ secrets.NONGSARO_API_KEY }}" >> ~/app/app.env
             echo "PLANTID_API_KEY=${{ secrets.PLANTID_API_KEY }}" >> ~/app/app.env
             echo "TMAP_API_KEY=${{ secrets.TMAP_API_KEY }}" >> ~/app/app.env
+            echo "TOUR_API_KEY=${{ secrets.TOUR_API_KEY }}" >> ~/app/app.env
             echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> ~/app/app.env
             echo "FIREBASE_SERVICE_ACCOUNT_PATH=/home/ubuntu/app/firebase-service-account.json" >> ~/app/app.env
             printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > ~/app/firebase-service-account.json
