@@ -38,8 +38,11 @@ class AppActionRuntime {
       await _push(context, screen);
     } catch (e) {
       if (context.mounted) {
+        final target = actions.isEmpty
+            ? '화면'
+            : actions.first.target ?? actions.first.type;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('화면 이동에 실패했습니다.')),
+          SnackBar(content: Text('$target 이동에 실패했습니다.')),
         );
       }
     }
@@ -101,5 +104,24 @@ class AppActionRuntime {
       default:
         return null;
     }
+  }
+
+  // 챗봇 액션의 params에서 안전하게 문자열을 추출 (향후 initialQuery 지원 시 사용)
+  // ignore: unused_element
+  static String? _stringParam(ChatAction action, String key) {
+    final value = action.params?[key];
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+
+  // 챗봇 액션의 params에서 안전하게 정수를 추출
+  // ignore: unused_element
+  static int? _intParam(ChatAction action, String key) {
+    final value = action.params?[key];
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
   }
 }

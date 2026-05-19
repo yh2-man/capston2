@@ -16,6 +16,7 @@ public class MapNavigationTools {
 
     private final ChatbotActionContext actionContext;
 
+    // KO: 지도 화면을 여는 앱 내부 액션을 준비합니다.
     @Tool(description = "Prepare an internal client follow-up that opens the map screen.")
     public String openMapScreen() {
         actionContext.incrementToolCount("openMapScreen");
@@ -27,12 +28,14 @@ public class MapNavigationTools {
                 .build();
         actionContext.addAction(action);
 
-        log.info("[Tool:openMapScreen] map navigation follow-up created");
-        return "Map screen follow-up prepared.";
+        log.info("[Tool:openMapScreen] 지도 화면 이동 후속 액션 생성");
+        return "지도 화면 후속 액션을 준비했습니다.";
     }
 
+    // KO: 지도 화면 검색창에 검색어를 적용하는 앱 내부 액션을 준비합니다.
     @Tool(description = "Prepare an internal client follow-up that applies a search query to the map screen.")
     public String setMapSearchQuery(
+            // KO: 지도 검색창에 넣을 검색어입니다.
             @ToolParam(description = "Search query to apply in the map search field.") String query
     ) {
         actionContext.incrementToolCount("setMapSearchQuery");
@@ -45,12 +48,14 @@ public class MapNavigationTools {
                 .build();
         actionContext.addAction(action);
 
-        log.info("[Tool:setMapSearchQuery] query={}", sanitized);
-        return "Map search query follow-up prepared.";
+        log.info("[Tool:setMapSearchQuery] 검색어={}", sanitized);
+        return "지도 검색어 적용 후속 액션을 준비했습니다.";
     }
 
+    // KO: 지도에서 특정 꽃 위치를 강조하는 앱 내부 액션을 준비합니다.
     @Tool(description = "Prepare an internal client follow-up that highlights a flower location on the map.")
     public String showFlowerOnMap(
+            // KO: 지도에서 강조할 꽃 ID입니다.
             @ToolParam(description = "Flower id to highlight on the map.") Long flowerId
     ) {
         actionContext.incrementToolCount("showFlowerOnMap");
@@ -63,11 +68,13 @@ public class MapNavigationTools {
         actionContext.addAction(action);
 
         log.info("[Tool:showFlowerOnMap] flowerId={}", flowerId);
-        return "Map flower highlight follow-up prepared.";
+        return "지도 꽃 위치 강조 후속 액션을 준비했습니다.";
     }
 
+    // KO: 지도 화면에서 특정 꽃 미리보기를 여는 앱 내부 액션을 준비합니다.
     @Tool(description = "Prepare an internal client follow-up that opens a flower preview in the map screen.")
     public String openFlowerMapPreview(
+            // KO: 지도 화면에서 미리보기로 열 꽃 ID입니다.
             @ToolParam(description = "Flower id to preview in the map screen.") Long flowerId
     ) {
         actionContext.incrementToolCount("openFlowerMapPreview");
@@ -80,7 +87,7 @@ public class MapNavigationTools {
         actionContext.addAction(action);
 
         log.info("[Tool:openFlowerMapPreview] flowerId={}", flowerId);
-        return "Map flower preview follow-up prepared.";
+        return "지도 꽃 미리보기 후속 액션을 준비했습니다.";
     }
 
     private String sanitizeQuery(String query) {
