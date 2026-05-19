@@ -4,7 +4,7 @@ import '../theme/season_theme.dart';
 import '../services/community_api_service.dart';
 import '../widgets/app_bottom_navigation.dart';
 import '../widgets/chat_floating_button.dart';
-import 'create_post_screen.dart';
+import 'create_flower_spot_screen.dart';
 import '../widgets/comment_bottom_sheet.dart';
 
 class CommunityFeedScreen extends StatefulWidget {
@@ -106,7 +106,7 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
   Future<void> _openCreatePost() async {
     final result = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (_) => const CreatePostScreen()),
+      MaterialPageRoute(builder: (_) => const CreateFlowerSpotScreen()),
     );
     if (result == true) _loadPosts();
   }
