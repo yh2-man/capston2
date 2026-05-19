@@ -14,17 +14,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByNickname(String nickname);
 
+    // PostGIS 공간 인덱스 기반 반경 검색 (idx_users_last_location GIST 인덱스 사용)
     @Query(nativeQuery = true, value = """
         SELECT * FROM users
-        WHERE fcm_token IS NOT NULL
-          AND last_latitude IS NOT NULL
-          AND last_longitude IS NOT NULL
-          AND id <> :excludeUserId
-          AND (6371000 * acos(LEAST(1.0,
-                cos(radians(:lat)) * cos(radians(last_latitude)) *
-                cos(radians(last_longitude) - radians(:lng)) +
-                sin(radians(:lat)) * sin(radians(last_latitude))
-              ))) <= :radiusM
+         WHERE fcm_token IS NOT NULL
+           AND last_location IS NOT NULL
+           AND id <> :excludeUserId
+           AND ST_DWithin(
+                 last_location,
+                 ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
+                 :radiusM
+               )
         """)
     List<User> findNearbyUsersWithFcmToken(
             @Param("lat") double lat,

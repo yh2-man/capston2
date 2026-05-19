@@ -140,11 +140,20 @@ public class CommunityService {
     @Transactional(readOnly = true)
     public FeedResponse getFlowerSpots(Double lat, Double lng, double radius, int days, Long cursor) {
         LocalDateTime since = LocalDateTime.now().minusDays(days);
-        var pageable = PageRequest.of(0, 21);
+        int limit = 21;
 
-        List<CommunityPost> posts = cursor == null
-                ? postRepository.findFlowerSpots(since, pageable)
-                : postRepository.findFlowerSpotsByCursor(cursor, since, pageable);
+        // lat/lng가 있으면 PostGIS 반경 검색, 없으면 시간 기준 전체 조회
+        List<CommunityPost> posts;
+        if (lat != null && lng != null) {
+            posts = cursor == null
+                    ? postRepository.findFlowerSpotsNearby(lat, lng, radius, since, limit)
+                    : postRepository.findFlowerSpotsNearbyByCursor(cursor, lat, lng, radius, since, limit);
+        } else {
+            var pageable = PageRequest.of(0, limit);
+            posts = cursor == null
+                    ? postRepository.findFlowerSpots(since, pageable)
+                    : postRepository.findFlowerSpotsByCursor(cursor, since, pageable);
+        }
 
         boolean hasNext = posts.size() > 20;
         if (hasNext) posts = posts.subList(0, 20);
