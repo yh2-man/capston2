@@ -71,10 +71,6 @@ body {
   animation: panelSlideIn 220ms ease;
 }
 
-.marker-panel {
-  padding: 14px 16px;
-}
-
 .route-panel {
   top: var(--route-panel-top, 150px);
   bottom: auto !important;
@@ -151,6 +147,7 @@ body {
   right: 16px;
   bottom: 162px;
   width: min(280px, calc(100vw - 32px));
+  padding: 14px 16px;
 }
 
 .marker-panel-floating {
