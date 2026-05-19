@@ -240,16 +240,9 @@
     if (!baseUrl) return [];
 
     try {
-      const center = state.currentPosition ||
-        config.DEFAULT_CENTER ||
-        { lat: 37.5665, lng: 126.9780 };
-      const params = new URLSearchParams({
-        lat: center.lat,
-        lng: center.lng,
-        radius: state.radius,
-        limit: config.DEFAULT_LIMIT || 50,
-      });
-      const response = await fetch(`${baseUrl}/flower-spots?${params.toString()}`);
+      // 지도 전체 뷰: 위치 필터 없이 최근 게시글 전부 표시
+      // (반경 검색은 백엔드 근처 알림 등에서만 사용)
+      const response = await fetch(`${baseUrl}/flower-spots`);
       if (!response.ok) return [];
       const body = await response.json();
       const posts = body.data?.posts ?? (Array.isArray(body) ? body : []);

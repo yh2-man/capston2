@@ -138,13 +138,14 @@ public class CommunityService {
     }
 
     @Transactional(readOnly = true)
-    public FeedResponse getFlowerSpots(Double lat, Double lng, double radius, int days, Long cursor) {
+    public FeedResponse getFlowerSpots(Double lat, Double lng, Double radius, int days, Long cursor) {
         LocalDateTime since = LocalDateTime.now().minusDays(days);
         int limit = 21;
 
-        // lat/lng가 있으면 PostGIS 반경 검색, 없으면 시간 기준 전체 조회
+        // 위치 + 반경 모두 지정된 경우만 PostGIS 반경 검색
+        // 미지정 시 days 이내 모든 FLOWER_SPOT 반환 (지도 전체 뷰 등)
         List<CommunityPost> posts;
-        if (lat != null && lng != null) {
+        if (lat != null && lng != null && radius != null) {
             posts = cursor == null
                     ? postRepository.findFlowerSpotsNearby(lat, lng, radius, since, limit)
                     : postRepository.findFlowerSpotsNearbyByCursor(cursor, lat, lng, radius, since, limit);
