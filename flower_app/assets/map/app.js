@@ -1865,7 +1865,7 @@
     ].join('');
 
     if (steps && steps.length) {
-      html += '<div id="route-steps" class="route-steps" style="display:none;">';
+      html += '<div id="route-steps" class="route-steps hidden">';
       steps.forEach(function (step) {
         const stepDistance = step.distance >= 1000
           ? `${(step.distance / 1000).toFixed(1)}km`
@@ -1890,9 +1890,9 @@
       toggleButton.addEventListener('click', function () {
         const stepElement = $('#route-steps');
         if (!stepElement) return;
-        const hidden = stepElement.style.display === 'none';
-        stepElement.style.display = hidden ? 'block' : 'none';
-        toggleButton.textContent = hidden ? '접기' : '경로';
+        const wasHidden = stepElement.classList.contains('hidden');
+        stepElement.classList.toggle('hidden', !wasHidden);
+        toggleButton.textContent = wasHidden ? '접기' : '경로';
         refitVisibleRoute();
       });
     }
@@ -1932,7 +1932,7 @@
       '<button class="panel-close" data-role="toggle">구간</button>',
       '<button class="panel-close-x" data-role="close" aria-label="닫기">×</button>',
       '</div>',
-      '<div id="route-steps" class="route-steps transit-steps" style="display:none;">',
+      '<div id="route-steps" class="route-steps transit-steps hidden">',
     ].join('');
 
     (route.legs || []).forEach(function (leg) {
@@ -1949,9 +1949,9 @@
       toggleButton.addEventListener('click', function () {
         const stepElement = $('#route-steps');
         if (!stepElement) return;
-        const hidden = stepElement.style.display === 'none';
-        stepElement.style.display = hidden ? 'block' : 'none';
-        toggleButton.textContent = hidden ? '접기' : '구간';
+        const wasHidden = stepElement.classList.contains('hidden');
+        stepElement.classList.toggle('hidden', !wasHidden);
+        toggleButton.textContent = wasHidden ? '접기' : '구간';
         refitVisibleRoute();
       });
     }

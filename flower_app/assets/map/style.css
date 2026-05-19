@@ -435,6 +435,10 @@ body {
   padding-top: 8px;
 }
 
+.route-steps.hidden {
+  display: none !important;
+}
+
 .route-step {
   display: flex;
   align-items: center;
