@@ -241,18 +241,31 @@
 
   async function fetchFlowersFromApi() {
     const baseUrl = config.API_BASE_URL;
-    if (!baseUrl) return [];
+    console.log('[FlowerMap] fetchFlowersFromApi baseUrl=', baseUrl);
+    if (!baseUrl) {
+      console.warn('[FlowerMap] API_BASE_URL is empty');
+      return [];
+    }
 
+    const url = `${baseUrl}/flower-spots`;
+    console.log('[FlowerMap] fetching:', url);
     try {
-      // 지도 전체 뷰: 위치 필터 없이 최근 게시글 전부 표시
-      // (반경 검색은 백엔드 근처 알림 등에서만 사용)
-      const response = await fetch(`${baseUrl}/flower-spots`);
-      if (!response.ok) return [];
-      const body = await response.json();
+      const response = await fetch(url);
+      console.log('[FlowerMap] response status:', response.status);
+      if (!response.ok) {
+        console.warn('[FlowerMap] response not ok:', response.status);
+        return [];
+      }
+      const text = await response.text();
+      console.log('[FlowerMap] response body length:', text.length);
+      const body = JSON.parse(text);
       const posts = body.data?.posts ?? (Array.isArray(body) ? body : []);
-      return normalizeFlowers(posts);
+      console.log('[FlowerMap] parsed posts count:', posts.length);
+      const normalized = normalizeFlowers(posts);
+      console.log('[FlowerMap] after normalize:', normalized.length);
+      return normalized;
     } catch (error) {
-      console.warn('Flower API is unavailable.', error);
+      console.warn('Flower API is unavailable.', String(error));
       return [];
     }
   }
