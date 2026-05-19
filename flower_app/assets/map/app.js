@@ -498,6 +498,8 @@
         return false;
       }
 
+      // 거리는 표시용으로만 계산하고 반경 필터링은 하지 않음
+      // (지도 전체 뷰: 위치 무관하게 모든 꽃 게시글 표시)
       if (center && !flower._test) {
         flower.distance_m = Math.round(
           distanceMeters(
@@ -507,7 +509,6 @@
             flower.location.lng,
           ),
         );
-        if (flower.distance_m > state.radius) return false;
       }
 
       return true;
