@@ -309,51 +309,54 @@ class _FlowerDetailSheetState extends State<_FlowerDetailSheet> {
     final emoji = widget.flower.categoryEmoji ?? '🌿';
     final imageUrl = _detail?.imageUrl ?? widget.flower.imageUrl;
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.7,
-      decoration: const BoxDecoration(
-        color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: Column(
-        children: [
-          Container(margin: const EdgeInsets.only(top: 12), width: 40, height: 4,
-            decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
-          Container(
-            width: double.infinity, height: 160,
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: widget.cardColor.withAlpha(40), borderRadius: BorderRadius.circular(20)),
-            child: imageUrl != null && imageUrl.isNotEmpty
-                ? ClipRRect(borderRadius: BorderRadius.circular(20),
-                    child: Image.network(imageUrl, fit: BoxFit.cover,
-                      cacheWidth: 800, filterQuality: FilterQuality.medium,
-                      errorBuilder: (_, __, ___) => Center(child: Text(emoji, style: const TextStyle(fontSize: 72)))))
-                : Center(child: Text(emoji, style: const TextStyle(fontSize: 72))),
-          ),
-          Expanded(
-            child: _loadingDetail
-                ? Center(child: CircularProgressIndicator(color: widget.colors.primary))
-                : ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    children: [
-                      Text(_detail?.name ?? widget.flower.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                      if (_detail?.scientificName?.isNotEmpty == true)
-                        Text(_detail!.scientificName!, style: TextStyle(fontSize: 14, color: Colors.grey[500], fontStyle: FontStyle.italic)),
-                      const SizedBox(height: 12),
-                      _infoChip(Icons.format_quote, '꽃말', _detail?.flowerLanguage ?? widget.flower.flowerLanguage ?? ''),
-                      _infoChip(Icons.calendar_today, '개화', widget.flower.dateString),
-                      if (_detail?.description?.isNotEmpty == true) ...[
-                        const SizedBox(height: 16), _sectionTitle('꽃 이야기'),
-                        Text(_detail!.description!, style: const TextStyle(fontSize: 14, height: 1.6)),
+    return SafeArea(
+      top: false,
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: const BoxDecoration(
+          color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          children: [
+            Container(margin: const EdgeInsets.only(top: 12), width: 40, height: 4,
+              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+            Container(
+              width: double.infinity, height: 160,
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: widget.cardColor.withAlpha(40), borderRadius: BorderRadius.circular(20)),
+              child: imageUrl != null && imageUrl.isNotEmpty
+                  ? ClipRRect(borderRadius: BorderRadius.circular(20),
+                      child: Image.network(imageUrl, fit: BoxFit.cover,
+                        cacheWidth: 800, filterQuality: FilterQuality.medium,
+                        errorBuilder: (_, __, ___) => Center(child: Text(emoji, style: const TextStyle(fontSize: 72)))))
+                  : Center(child: Text(emoji, style: const TextStyle(fontSize: 72))),
+            ),
+            Expanded(
+              child: _loadingDetail
+                  ? Center(child: CircularProgressIndicator(color: widget.colors.primary))
+                  : ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      children: [
+                        Text(_detail?.name ?? widget.flower.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                        if (_detail?.scientificName?.isNotEmpty == true)
+                          Text(_detail!.scientificName!, style: TextStyle(fontSize: 14, color: Colors.grey[500], fontStyle: FontStyle.italic)),
+                        const SizedBox(height: 12),
+                        _infoChip(Icons.format_quote, '꽃말', _detail?.flowerLanguage ?? widget.flower.flowerLanguage ?? ''),
+                        _infoChip(Icons.calendar_today, '개화', widget.flower.dateString),
+                        if (_detail?.description?.isNotEmpty == true) ...[
+                          const SizedBox(height: 16), _sectionTitle('꽃 이야기'),
+                          Text(_detail!.description!, style: const TextStyle(fontSize: 14, height: 1.6)),
+                        ],
+                        if (_detail?.growTips?.isNotEmpty == true) ...[
+                          const SizedBox(height: 16), _sectionTitle('기르기'),
+                          Text(_detail!.growTips!, style: const TextStyle(fontSize: 14, height: 1.6)),
+                        ],
+                        const SizedBox(height: 24),
                       ],
-                      if (_detail?.growTips?.isNotEmpty == true) ...[
-                        const SizedBox(height: 16), _sectionTitle('기르기'),
-                        Text(_detail!.growTips!, style: const TextStyle(fontSize: 14, height: 1.6)),
-                      ],
-                      const SizedBox(height: 24),
-                    ],
-                  ),
-          ),
-        ],
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
