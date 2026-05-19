@@ -77,7 +77,9 @@ body {
 
 .route-panel {
   top: var(--route-panel-top, 150px);
-  bottom: auto;
+  bottom: auto !important;
+  height: auto !important;
+  min-height: 0;
   z-index: 44;
   max-height: calc(100vh - var(--route-panel-top, 150px) - 20px);
   overflow: hidden;
@@ -129,26 +131,13 @@ body {
   min-width: 0;
 }
 
-.route-panel .panel-close {
-  height: 26px;
-  min-width: 40px;
-  padding: 0 10px;
-  font-size: 11px;
-}
-
 .route-panel .panel-close-x {
   width: 26px;
   height: 26px;
-  font-size: 14px;
-}
-
-.route-panel .panel-close-x {
-  width: 28px;
-  height: 28px;
   border-radius: 50%;
   background: #f2f4f3;
   color: var(--muted);
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1;
   display: grid;
   place-items: center;
@@ -304,12 +293,12 @@ body {
 
 .route-panel .panel-close {
   width: auto;
-  min-width: 52px;
-  height: 32px;
-  padding: 0 12px;
+  min-width: 40px;
+  height: 26px;
+  padding: 0 10px;
   border-radius: 999px;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
 }
 
