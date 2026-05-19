@@ -1897,13 +1897,7 @@
       });
     }
 
-    const closeButton = panel.querySelector('[data-role="close"]');
-    if (closeButton) {
-      closeButton.addEventListener('click', function () {
-        clearRoute();
-        removePanel('route-panel');
-      });
-    }
+    attachRoutePanelCloseHandler(panel);
   }
 
   function showTransitRoutePanel(route, destName) {
@@ -1962,13 +1956,7 @@
       });
     }
 
-    const closeButton = panel.querySelector('[data-role="close"]');
-    if (closeButton) {
-      closeButton.addEventListener('click', function () {
-        clearRoute();
-        removePanel('route-panel');
-      });
-    }
+    attachRoutePanelCloseHandler(panel);
   }
 
   function buildTransitLegHtml(leg) {
@@ -2076,9 +2064,11 @@
       `<strong>${escapeHtml(destName || '')}</strong>`,
       `<span>${escapeHtml(label)} 경로를 찾는 중입니다.</span>`,
       '</div>',
+      '<button class="panel-close-x" data-role="close" aria-label="닫기">×</button>',
       '</div>',
     ].join('');
     $('#map-shell').appendChild(panel);
+    attachRoutePanelCloseHandler(panel);
   }
 
   function showRouteError(message) {
@@ -2091,10 +2081,21 @@
       '<div class="panel-row">',
       '<span class="panel-icon">...</span>',
       `<div class="panel-info"><span>${escapeHtml(message)}</span></div>`,
+      '<button class="panel-close-x" data-role="close" aria-label="닫기">×</button>',
       '</div>',
     ].join('');
 
     $('#map-shell').appendChild(panel);
+    attachRoutePanelCloseHandler(panel);
+  }
+
+  function attachRoutePanelCloseHandler(panel) {
+    const closeButton = panel.querySelector('[data-role="close"]');
+    if (!closeButton) return;
+    closeButton.addEventListener('click', function () {
+      clearRoute();
+      removePanel('route-panel');
+    });
   }
 
   function showMapStatus(message) {

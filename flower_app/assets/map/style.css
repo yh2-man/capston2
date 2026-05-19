@@ -81,37 +81,59 @@ body {
   z-index: 44;
   max-height: calc(100vh - var(--route-panel-top, 150px) - 20px);
   overflow: hidden;
-  border-radius: 14px;
-  padding: 8px 10px;
+  border-radius: 12px;
+  padding: 6px 10px;
 }
 
 .route-panel .panel-row {
   gap: 8px;
+  min-height: 36px;
 }
 
 .route-panel .panel-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 10px;
-  font-size: 11px;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  font-size: 10px;
+}
+
+.route-panel .panel-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
 }
 
 .route-panel .panel-info strong {
-  font-size: 13px;
+  display: inline;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .route-panel .panel-info span {
+  display: inline;
+  margin-top: 0;
   font-size: 11px;
-  margin-top: 2px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.route-panel .panel-close {
+  height: 24px;
+  min-width: 40px;
+  padding: 0 8px;
+  font-size: 11px;
 }
 
 .route-panel .panel-close-x {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: #f2f4f3;
   color: var(--muted);
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1;
   display: grid;
   place-items: center;
