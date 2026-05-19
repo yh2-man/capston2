@@ -72,7 +72,7 @@
     'park',
   ];
   const CATEGORY_COLORS = {
-    flower: '#3B82F6',
+    flower: '#FBBF24',
     festival: '#ff4fa3',
     tourist: '#10b981',
   };
