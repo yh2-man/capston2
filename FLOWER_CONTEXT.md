@@ -17,7 +17,7 @@
 | 서버 | Spring Boot (Java) | `v4.0.5` / Java `17` |
 | 빌드 | Gradle | `8.x` |
 | DB | PostgreSQL + PostGIS | `v18.3` + `v3.6.2` |
-| 인증 | JWT (Access + Refresh) / OAuth (Google, Kakao, Naver) | - |
+| 인증 | JWT (Access + Refresh) / OAuth (Kakao 단일) | - |
 | 챗봇 | OpenAI API + RAG | GPT-4o |
 | 알림 | FCM | API v1 |
 | 저장소 | OCI Object Storage | 미디어 호스팅 |

@@ -1,7 +1,7 @@
-# Task Card: AUTH — 인증 (회원가입 / 로그인)
+# Task Card: AUTH — 인증 (카카오 소셜 로그인)
 
-> **연관 PRD:** §4.0 AUTH-01 ~ AUTH-06  
-> **우선순위:** P0 (MVP 필수)  
+> **연관 PRD:** §4.0 AUTH-01 ~ AUTH-03
+> **우선순위:** P0 (MVP 필수)
 > **함께 읽기:** `FLOWER_CONTEXT.md` (항상 포함)
 
 ---
@@ -10,12 +10,12 @@
 
 | ID | 요구사항 |
 |----|----------|
-| AUTH-01 | 이메일 + 비밀번호 회원가입/로그인 |
-| AUTH-02 | 구글 소셜 로그인 |
-| AUTH-03 | 카카오 소셜 로그인 |
-| AUTH-04 | 네이버 소셜 로그인 |
-| AUTH-05 | 소셜 최초 가입 시 닉네임 입력 |
-| AUTH-06 | JWT Access + Refresh Token 인증 유지 |
+| AUTH-01 | 카카오 소셜 로그인 (유일한 로그인 수단) |
+| AUTH-02 | 소셜 최초 가입 시 닉네임/프로필 사진 입력 |
+| AUTH-03 | JWT Access + Refresh Token 인증 유지 |
+
+> ⚠️ 이메일/비밀번호 회원가입, 구글/네이버 로그인은 **MVP 범위에서 제외**됨.
+> 단일 로그인 수단으로 회원 모델·UI·OAuth 분기 로직을 단순화했음.
 
 ---
 
@@ -23,73 +23,63 @@
 
 | 서비스 | API 이름 | 용도 | 비용 |
 | :--- | :--- | :--- | :--- |
-| **구글** | Google OAuth 2.0 | 구글 계정 간편 로그인 | 무료 |
-| **카카오** | Kakao Login API | 카카오 계정 간편 로그인 | 무료 |
-| **네이버** | Naver Login API | 네이버 계정 간편 로그인 | 무료 |
+| **카카오** | Kakao Login API (REST API) | 카카오 계정 간편 로그인 | 무료 |
 
 ---
 
 ## API 엔드포인트
 
-### 2.1 회원가입
+### 1. 카카오 소셜 로그인
 ```
-POST /auth/signup  (인증 불필요)
-Body: { email, password (8자+, 영문+숫자), nickname (2~10자) }
-→ 201: { user_id, email, nickname, created_at }
-에러: EMAIL_ALREADY_EXISTS(409), INVALID_EMAIL_FORMAT(400), INVALID_PASSWORD_FORMAT(400)
+POST /api/v1/auth/oauth/kakao  (인증 불필요)
+Body: { authCode, redirectUri }
+
+→ 200 (기존 회원): { isNewUser: false, accessToken, refreshToken, expiresIn, user }
+→ 200 (신규 회원): { isNewUser: true, tempToken, provider, providerEmail? }
+
+에러: INVALID_OAUTH_CODE(401), OAUTH_UPSTREAM_ERROR(500)
 ```
 
-### 2.2 로그인
+### 2. 토큰 갱신
 ```
-POST /auth/login  (인증 불필요)
-Body: { email, password }
-→ 200: { access_token, refresh_token, expires_in, user: { user_id, nickname } }
-에러: INVALID_CREDENTIALS(401)
-```
-
-### 2.3 토큰 갱신
-```
-POST /auth/refresh  (인증 불필요)
+POST /api/v1/auth/refresh  (인증 불필요)
 Body: { refresh_token }
 → 200: { access_token, expires_in }
 에러: INVALID_REFRESH_TOKEN(401)
 ```
 
-### 2.4 로그아웃
+### 3. 로그아웃
 ```
-POST /auth/logout  (🔒 인증 필요)
+POST /api/v1/auth/logout  (🔒 인증 필요)
 Body: { refresh_token }
 → 200: { data: null }
+부수효과: FCM 토큰 초기화
 ```
 
-### 2.5 소셜 로그인 (OAuth)
+### 4. 프로필 설정 (신규 소셜 회원)
 ```
-POST /auth/oauth/{provider}  (인증 불필요)
-Path: provider = google | kakao | naver
-Body: { auth_code, redirect_uri }
-
-→ 200 (기존 회원): { is_new_user: false, access_token, refresh_token, expires_in, user }
-→ 200 (신규 회원): { is_new_user: true, temp_token, provider, provider_email }
-
-에러: INVALID_OAUTH_CODE(401), UNSUPPORTED_OAUTH_PROVIDER(400), OAUTH_UPSTREAM_ERROR(500)
-```
-
-### 2.6 닉네임 설정 (신규 소셜 회원)
-```
-POST /auth/nickname  (temp_token으로 인증)
-Body: { temp_token, nickname (2~10자) }
-→ 201: { access_token, refresh_token, expires_in, user }
+POST /api/v1/auth/profile-setup  (tempToken으로 인증)
+Body: { tempToken, nickname (2~10자), profileImageUrl? }
+→ 201: { accessToken, refreshToken, expiresIn, user }
 에러: TEMP_TOKEN_EXPIRED(401), NICKNAME_ALREADY_EXISTS(409), INVALID_NICKNAME_LENGTH(400)
+```
+
+### 5. FCM 토큰 등록/갱신
+```
+POST /api/v1/auth/fcm-token  (🔒 인증 필요)
+Body: { fcmToken }
+→ 200: { data: null }
 ```
 
 ---
 
-## 소셜 로그인 흐름
+## 카카오 소셜 로그인 흐름
 
 ```
-[앱] SDK 호출 → [소셜 제공자] auth_code 반환
-[앱 → 서버] auth_code 전달
-[서버] 소셜 API로 사용자 정보 조회
+[앱] 시스템 브라우저로 카카오 인증 페이지 호출 → 사용자 로그인
+[카카오] 콜백 딥링크(ourt://)로 auth_code 전달
+[앱 → 서버] /api/v1/auth/oauth/kakao { authCode, redirectUri }
+[서버 → 카카오] auth_code를 Access Token으로 교환 → 사용자 프로필 조회
   → 신규: 계정 생성 + temp_token 발급 → 닉네임 설정 → JWT 발급
   → 기존: JWT 바로 발급
 ```
@@ -98,11 +88,13 @@ Body: { temp_token, nickname (2~10자) }
 
 ## 작업 체크리스트
 
-- [ ] Flutter: 로그인/회원가입 화면 UI
-- [ ] Flutter: Google/Kakao/Naver SDK 연동
-- [ ] Flutter: 토큰 저장 (secure storage)
-- [ ] Flutter: 닉네임 설정 화면 (소셜 신규 회원용)
-- [ ] 서버: /auth/* 엔드포인트 구현
-- [ ] 서버: JWT 발급/검증 미들웨어
-- [ ] 서버: OAuth provider별 토큰 교환 로직
-- [ ] 서버: users 테이블 (provider, provider_id 컬럼 포함)
+- [x] Flutter: 카카오 로그인 화면 UI (`login_screen.dart`)
+- [x] Flutter: `flutter_web_auth_2`로 시스템 브라우저 OAuth 흐름 구현
+- [x] Flutter: 토큰 저장 (SharedPreferences)
+- [x] Flutter: 닉네임/프로필 설정 화면 (`profile_setup_screen.dart`)
+- [x] 서버: `/api/v1/auth/*` 엔드포인트 구현
+- [x] 서버: JWT 발급/검증 (Access/Refresh/Temp Token)
+- [x] 서버: JWT 인증 필터 (`JwtAuthenticationFilter`)
+- [x] 서버: Kakao OAuth 토큰 교환 + 프로필 조회 (`OAuthService`)
+- [x] 서버: `users` 테이블 (provider=KAKAO, providerId, nickname, fcmToken, role)
+- [x] 서버: Spring Security 설정 (`SecurityConfig` — BCrypt, Stateless 세션)

@@ -253,7 +253,7 @@ POST /auth/oauth/{provider}
 **Path Parameters**
 | 파라미터 | 타입 | 설명 |
 |----------|------|------|
-| `provider` | string | 소셜 제공자 (`google`, `kakao`, `naver`) |
+| `provider` | string | 소셜 제공자 (`kakao` — 현재 단일 지원) |
 
 **Request Body**
 ```json

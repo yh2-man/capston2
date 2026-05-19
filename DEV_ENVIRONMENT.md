@@ -22,7 +22,7 @@ API 서버는 RESTful 형식으로 통신하며, Spring Boot 프레임워크를 
 ### 1-1. 백엔드 핵심 설치 라이브러리 (Dependencies)
 - **Spring WebMVC (`spring-boot-starter-web`)**: HTTP 기반 REST API 통신 모듈 구축 시 사용.
 - **Spring Data JPA (`spring-boot-starter-data-jpa`)**: SQL 쿼리를 최소화하고 데이터베이스를 객체로 조회/처리하기 위한 ORM 프레임워크.
-- **Spring Security (`spring-boot-starter-security`)**: 소셜 로그인(구글·카카오·네이버)의 인증 처리 권한 획득, 그리고 JWT (Access/Refresh Token) 처리를 위해 구성됨.
+- **Spring Security (`spring-boot-starter-security`)**: 카카오 소셜 로그인의 인증 처리 권한 획득, 그리고 JWT (Access/Refresh Token) 처리를 위해 구성됨.
 - **Validation (`spring-boot-starter-validation`)**: 들어오는 클라이언트 요청 값(이메일, 비밀번호 등)의 유효성 검사.
 - **PostgreSQL JDBC Driver (`postgresql`)**: PostgreSQL 데이터베이스와 애플리케이션 연결 드라이버.
 - **Lombok (`lombok`)**: 코드량(Getter, Setter, 생성자 등)을 극적으로 줄여주는 유틸리티 플러그인.
@@ -42,10 +42,9 @@ API 서버는 RESTful 형식으로 통신하며, Spring Boot 프레임워크를 
 - **상태 관리**: `riverpod` (앱 내 데이터 상태 구조 추적 및 관리)
 - **지도 연동**: `kakao_map_sdk` (인앱 지도 및 꽃 위치 마커 렌더링)
 - **네트워킹**: `dio`
-- **소셜 로그인**: 
-  - `google_sign_in` (구글 Oauth 연동)
-  - `kakao_flutter_sdk_user` (카카오 연동)
-  - `flutter_naver_login` (네이버 연동)
+- **소셜 로그인**:
+  - `flutter_web_auth_2` (시스템 브라우저로 카카오 OAuth 흐름 처리)
+  - `flutter_dotenv` (카카오 REST API 키 로드)
 
 ---
 
