@@ -26,6 +26,8 @@
     routeEndMarker: null,
     routeBounds: null,
     routeSteps: [],
+    pendingFlowerFocus: null,
+    pendingRouteAction: null,
     showFlowers: true,
     showFestivals: true,
     showTouristSpots: true,
@@ -86,12 +88,40 @@
       baseUri: document.baseURI,
     });
     exposeFlutterBridge();
+    applyInitialConfig();
     bindKakaoEvents();
     bindMapDomDiagnostics();
     initGeolocation();
     loadFlowers();
     loadFestivals();
     loadTouristSpots();
+  }
+
+  function applyInitialConfig() {
+    const initialSearch = String(config.INITIAL_SEARCH_QUERY || '').trim();
+    if (initialSearch) {
+      state.search = initialSearch;
+    }
+    const initialFlowerId = String(config.INITIAL_FOCUS_FLOWER_ID || '').trim();
+    if (initialFlowerId) {
+      state.pendingFlowerFocus = {
+        flowerId: initialFlowerId,
+        openPreview: config.INITIAL_OPEN_FLOWER_PREVIEW !== false,
+      };
+    }
+    const initialRouteFlowerId = String(config.INITIAL_ROUTE_FLOWER_ID || '').trim();
+    if (initialRouteFlowerId) {
+      state.pendingRouteAction = {
+        flowerId: initialRouteFlowerId,
+        mode: normalizeBridgeRouteMode(config.INITIAL_ROUTE_MODE || ''),
+      };
+    }
+  }
+
+  function normalizeBridgeRouteMode(mode) {
+    const lower = String(mode || '').trim().toLowerCase();
+    if (lower === 'walk' || lower === 'car' || lower === 'transit') return lower;
+    return 'none';
   }
 
   function isKoreanMapPosition(lat, lng) {
@@ -210,6 +240,15 @@
           console.warn('Failed to focus festival.', error);
         }
       },
+      focusFlowerById(flowerId, openPreview) {
+        focusFlowerById(flowerId, openPreview !== false);
+      },
+      openRouteChooserByFlowerId(flowerId) {
+        openRouteChooserByFlowerId(flowerId);
+      },
+      startRouteToFlowerById(flowerId, mode) {
+        startRouteToFlowerById(flowerId, mode);
+      },
     };
   }
 
@@ -233,6 +272,8 @@
     const apiFlowers = await fetchFlowersFromApi();
     state.flowers = apiFlowers;
     applyFilters();
+    applyPendingFlowerFocus();
+    applyPendingRouteAction();
   }
 
   async function fetchFlowersFromApi() {
@@ -523,6 +564,8 @@
     });
 
     renderMap();
+    applyPendingFlowerFocus();
+    applyPendingRouteAction();
   }
 
   function buildVisibleMapItems() {
@@ -1164,9 +1207,113 @@
     }, 80);
   }
 
-  function showRouteModeChooser(item) {
+  function flowerToMapItem(flower) {
+    if (!flower || !flower.location) return null;
+    return {
+      id: `flower-${flower.flower_id || `${flower.location.lat},${flower.location.lng}`}`,
+      type: 'flower',
+      kindLabel: flower.species || '꽃',
+      name: flower.name || flower.species || '꽃 명소',
+      address: flower.address || '',
+      lat: flower.location.lat,
+      lng: flower.location.lng,
+      isFestival: false,
+      source: flower,
+    };
+  }
+
+  function findFlowerMapItemById(flowerId) {
+    const id = String(flowerId || '').trim();
+    if (!id || !state.map || !window.kakao?.maps || !state.flowers.length) return null;
+    const flower = state.flowers.find(function (entry) {
+      return String(entry.flower_id || '') === id;
+    });
+    return flowerToMapItem(flower);
+  }
+
+  function focusFlowerById(flowerId, openPreview) {
+    const id = String(flowerId || '').trim();
+    if (!id) return false;
+    if (!state.map || !window.kakao?.maps || !state.flowers.length) {
+      state.pendingFlowerFocus = { flowerId: id, openPreview: openPreview !== false };
+      return false;
+    }
+
+    const flower = state.flowers.find(function (entry) {
+      return String(entry.flower_id || '') === id;
+    });
+    if (!flower) {
+      state.pendingFlowerFocus = { flowerId: id, openPreview: openPreview !== false };
+      return false;
+    }
+
+    const item = flowerToMapItem(flower);
+    if (!item) return false;
+    markProgrammaticMove();
+    state.map.setLevel(Math.min(state.map.getLevel(), 3));
+    state.map.panTo(new kakao.maps.LatLng(item.lat, item.lng));
+    if (openPreview !== false) {
+      showMarkerInfo(item);
+    }
+    return true;
+  }
+
+  function openRouteChooserByFlowerId(flowerId) {
+    const item = findFlowerMapItemById(flowerId);
+    if (!item) {
+      state.pendingRouteAction = {
+        flowerId: String(flowerId || '').trim(),
+        mode: 'none',
+      };
+      return false;
+    }
+    showRouteModeChooser(item, { requireCurrentLocation: true });
+    return true;
+  }
+
+  function startRouteToFlowerById(flowerId, mode) {
+    const routeMode = normalizeBridgeRouteMode(mode);
+    const item = findFlowerMapItemById(flowerId);
+    if (!item) {
+      state.pendingRouteAction = {
+        flowerId: String(flowerId || '').trim(),
+        mode: routeMode,
+      };
+      return false;
+    }
+    navigateInApp(
+      item.lat,
+      item.lng,
+      item.name || '꽃 명소',
+      routeMode === 'none' ? 'transit' : routeMode,
+      { requireCurrentLocation: true },
+    );
+    return true;
+  }
+
+  function applyPendingFlowerFocus() {
+    if (!state.pendingFlowerFocus) return;
+    const pending = state.pendingFlowerFocus;
+    if (focusFlowerById(pending.flowerId, pending.openPreview)) {
+      state.pendingFlowerFocus = null;
+    }
+  }
+
+  function applyPendingRouteAction() {
+    if (!state.pendingRouteAction) return;
+    const pending = state.pendingRouteAction;
+    const applied = pending.mode && pending.mode !== 'none'
+      ? startRouteToFlowerById(pending.flowerId, pending.mode)
+      : openRouteChooserByFlowerId(pending.flowerId);
+    if (applied) {
+      state.pendingRouteAction = null;
+    }
+  }
+
+  function showRouteModeChooser(item, options) {
     removePanel('route-mode-panel');
     focusMapOnMarker(item.lat, item.lng, 156);
+    const routeOptions = options || {};
 
     const panel = document.createElement('div');
     panel.id = 'route-mode-panel';
@@ -1191,17 +1338,17 @@
 
     panel.querySelector('[data-role="walk"]').addEventListener('click', function () {
       panel.remove();
-      navigateInApp(item.lat, item.lng, item.name || '축제', 'walk');
+      navigateInApp(item.lat, item.lng, item.name || '축제', 'walk', routeOptions);
     });
 
     panel.querySelector('[data-role="car"]').addEventListener('click', function () {
       panel.remove();
-      navigateInApp(item.lat, item.lng, item.name || '축제', 'car');
+      navigateInApp(item.lat, item.lng, item.name || '축제', 'car', routeOptions);
     });
 
     panel.querySelector('[data-role="transit"]').addEventListener('click', function () {
       panel.remove();
-      navigateInApp(item.lat, item.lng, item.name || '축제', 'transit');
+      navigateInApp(item.lat, item.lng, item.name || '축제', 'transit', routeOptions);
     });
   }
 
@@ -1423,9 +1570,15 @@
     return item || {};
   }
 
-  async function navigateInApp(destLat, destLng, destName, mode) {
+  async function navigateInApp(destLat, destLng, destName, mode, options) {
     const routeMode = mode || 'walk';
-    await ensureCurrentPosition();
+    const hasCurrentPosition = await ensureCurrentPosition({
+      requireCurrentLocation: options?.requireCurrentLocation === true,
+    });
+    if (!hasCurrentPosition) {
+      showRouteError('현재 위치 권한이 필요합니다.');
+      return;
+    }
 
     showRouteLoading(destName, routeMode);
 
@@ -1457,13 +1610,16 @@
     }
   }
 
-  async function ensureCurrentPosition() {
-    if (state.currentPosition) return;
+  async function ensureCurrentPosition(options) {
+    if (state.currentPosition) return true;
+    const requireCurrentLocation = options?.requireCurrentLocation === true;
 
     try {
       await new Promise(function (resolve) {
         if (!navigator.geolocation) {
-          state.currentPosition = DEFAULT_FALLBACK_POSITION;
+          if (!requireCurrentLocation) {
+            state.currentPosition = DEFAULT_FALLBACK_POSITION;
+          }
           resolve();
           return;
         }
@@ -1480,13 +1636,13 @@
               };
               state.currentAccuracy = position.coords.accuracy || null;
             } else {
-              state.currentPosition = DEFAULT_FALLBACK_POSITION;
+              state.currentPosition = requireCurrentLocation ? null : DEFAULT_FALLBACK_POSITION;
               state.currentAccuracy = null;
             }
             resolve();
           },
           function () {
-            state.currentPosition = DEFAULT_FALLBACK_POSITION;
+            state.currentPosition = requireCurrentLocation ? null : DEFAULT_FALLBACK_POSITION;
             state.currentAccuracy = null;
             resolve();
           },
@@ -1494,9 +1650,10 @@
         );
       });
     } catch (_) {
-      state.currentPosition = DEFAULT_FALLBACK_POSITION;
+      state.currentPosition = requireCurrentLocation ? null : DEFAULT_FALLBACK_POSITION;
       state.currentAccuracy = null;
     }
+    return !!state.currentPosition;
   }
 
   async function fetchWalkingRoute(startLat, startLng, endLat, endLng) {
