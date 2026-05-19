@@ -71,71 +71,27 @@ body {
   animation: panelSlideIn 220ms ease;
 }
 
-.marker-panel {
+.marker-panel,
+.route-panel {
   padding: 14px 16px;
 }
 
 .route-panel {
   top: var(--route-panel-top, 150px);
   bottom: auto;
-  /* 가로는 검색창과 동일하게 화면 좌우 14px 마진 고정 */
-  /* 높이는 내용에 따라 자동 조절 */
   z-index: 44;
   max-height: calc(100vh - var(--route-panel-top, 150px) - 20px);
   overflow: hidden;
-  border-radius: 12px;
-  padding: 4px 10px;
-}
-
-.route-panel .panel-row {
-  gap: 8px;
-  /* min-height 제거 — 내용이 한 줄이면 한 줄 높이만큼만 차지 */
-}
-
-.route-panel .panel-icon {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  font-size: 10px;
-}
-
-.route-panel .panel-info {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  overflow: hidden;
-}
-
-.route-panel .panel-info strong {
-  display: inline;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.route-panel .panel-info span {
-  display: inline;
-  margin-top: 0;
-  font-size: 11px;
-  color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.route-panel .panel-close {
-  height: 22px;
-  min-width: 36px;
-  padding: 0 8px;
-  font-size: 11px;
+  border-radius: 18px;
 }
 
 .route-panel .panel-close-x {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: #f2f4f3;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1;
   display: grid;
   place-items: center;
@@ -433,10 +389,6 @@ body {
   overflow-y: auto;
   border-top: 1px solid rgba(33, 49, 42, 0.08);
   padding-top: 8px;
-}
-
-.route-steps.hidden {
-  display: none !important;
 }
 
 .route-step {
