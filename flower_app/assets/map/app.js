@@ -232,6 +232,10 @@
   async function loadFlowers() {
     const apiFlowers = await fetchFlowersFromApi();
     state.flowers = apiFlowers;
+    console.log('[FlowerMap] loadFlowers: received', apiFlowers.length, 'flowers');
+    if (apiFlowers.length > 0) {
+      console.log('[FlowerMap] first flower:', JSON.stringify(apiFlowers[0]));
+    }
     applyFilters();
   }
 
@@ -643,12 +647,17 @@
   }
 
   function renderMapMarkers() {
-    if (!state.map || !window.kakao?.maps) return;
+    if (!state.map || !window.kakao?.maps) {
+      console.warn('[FlowerMap] renderMapMarkers skipped: map=', !!state.map, 'kakao=', !!window.kakao?.maps);
+      return;
+    }
     clearKakaoMarkers();
 
     const items = state.filteredMapItems.length || state.search
       ? state.filteredMapItems
       : buildVisibleMapItems();
+    console.log('[FlowerMap] renderMapMarkers:', items.length, 'items (flowers:',
+      state.filteredFlowers.length, 'showFlowers:', state.showFlowers, ')');
     const groups = clusterMapItems(items);
 
     groups.forEach(function (group) {
