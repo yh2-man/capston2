@@ -71,8 +71,7 @@ body {
   animation: panelSlideIn 220ms ease;
 }
 
-.marker-panel,
-.route-panel {
+.marker-panel {
   padding: 14px 16px;
 }
 
@@ -82,7 +81,28 @@ body {
   z-index: 44;
   max-height: calc(100vh - var(--route-panel-top, 150px) - 20px);
   overflow: hidden;
-  border-radius: 18px;
+  border-radius: 14px;
+  padding: 8px 12px;
+}
+
+/* 경로 패널 안에서는 panel-info의 strong과 span을 한 줄로 표시 */
+.route-panel .panel-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  column-gap: 8px;
+  row-gap: 0;
+}
+
+.route-panel .panel-info strong {
+  display: inline;
+  font-size: 13px;
+}
+
+.route-panel .panel-info span {
+  display: inline;
+  margin-top: 0;
+  font-size: 11px;
 }
 
 .route-panel .panel-close-x {
