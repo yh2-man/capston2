@@ -1850,7 +1850,8 @@
     panel.id = 'route-panel';
     panel.className = 'map-panel route-panel route-panel-top';
 
-    let html = [
+    // 헤더만 먼저 렌더
+    panel.innerHTML = [
       '<div class="panel-row">',
       '<span class="panel-icon">도보</span>',
       '<div class="panel-info">',
@@ -1864,35 +1865,41 @@
       '</div>',
     ].join('');
 
+    // 구간 HTML은 변수로 보관, 토글 시 동적 추가/제거
+    let stepsHtml = '';
     if (steps && steps.length) {
-      html += '<div id="route-steps" class="route-steps" style="display:none;">';
-      steps.forEach(function (step) {
+      stepsHtml = steps.map(function (step) {
         const stepDistance = step.distance >= 1000
           ? `${(step.distance / 1000).toFixed(1)}km`
           : `${Math.round(step.distance)}m`;
-        html += [
+        return [
           '<div class="route-step">',
           `<span class="step-num">${escapeHtml(getStepIcon(step.instruction))}</span>`,
           `<span class="step-text">${escapeHtml(step.instruction)}</span>`,
           `<span class="step-dist">${escapeHtml(stepDistance)}</span>`,
           '</div>',
         ].join('');
-      });
-      html += '</div>';
+      }).join('');
     }
 
-    panel.innerHTML = html;
     $('#map-shell').appendChild(panel);
     refitVisibleRoute();
 
     const toggleButton = panel.querySelector('[data-role="toggle"]');
     if (toggleButton) {
       toggleButton.addEventListener('click', function () {
-        const stepElement = $('#route-steps');
-        if (!stepElement) return;
-        const hidden = stepElement.style.display === 'none';
-        stepElement.style.display = hidden ? 'block' : 'none';
-        toggleButton.textContent = hidden ? '접기' : '경로';
+        const existing = panel.querySelector('#route-steps');
+        if (existing) {
+          existing.remove();
+          toggleButton.textContent = '경로';
+        } else {
+          const stepsDiv = document.createElement('div');
+          stepsDiv.id = 'route-steps';
+          stepsDiv.className = 'route-steps';
+          stepsDiv.innerHTML = stepsHtml;
+          panel.appendChild(stepsDiv);
+          toggleButton.textContent = '접기';
+        }
         refitVisibleRoute();
       });
     }
@@ -1920,7 +1927,8 @@
     panel.id = 'route-panel';
     panel.className = 'map-panel route-panel route-panel-top transit-route-panel';
 
-    let html = [
+    // 헤더만 먼저 렌더 — 구간 토글 시 steps div를 동적 추가/제거
+    panel.innerHTML = [
       '<div class="panel-row panel-row-start">',
       `<span class="panel-icon">${escapeHtml(routeMode === 'car' ? '차' : routeMode === 'walk' ? '도보' : '교통')}</span>`,
       '<div class="panel-info">',
@@ -1932,26 +1940,29 @@
       '<button class="panel-close" data-role="toggle">구간</button>',
       '<button class="panel-close-x" data-role="close" aria-label="닫기">×</button>',
       '</div>',
-      '<div id="route-steps" class="route-steps transit-steps" style="display:none;">',
     ].join('');
 
-    (route.legs || []).forEach(function (leg) {
-      html += buildTransitLegHtml(leg);
-    });
-    html += '</div>';
+    // 구간 HTML은 변수로 보관, DOM에는 토글 시 추가
+    const stepsHtml = (route.legs || []).map(buildTransitLegHtml).join('');
 
-    panel.innerHTML = html;
     $('#map-shell').appendChild(panel);
     refitVisibleRoute();
 
     const toggleButton = panel.querySelector('[data-role="toggle"]');
     if (toggleButton) {
       toggleButton.addEventListener('click', function () {
-        const stepElement = $('#route-steps');
-        if (!stepElement) return;
-        const hidden = stepElement.style.display === 'none';
-        stepElement.style.display = hidden ? 'block' : 'none';
-        toggleButton.textContent = hidden ? '접기' : '구간';
+        const existing = panel.querySelector('#route-steps');
+        if (existing) {
+          existing.remove();
+          toggleButton.textContent = '구간';
+        } else {
+          const stepsDiv = document.createElement('div');
+          stepsDiv.id = 'route-steps';
+          stepsDiv.className = 'route-steps transit-steps';
+          stepsDiv.innerHTML = stepsHtml;
+          panel.appendChild(stepsDiv);
+          toggleButton.textContent = '접기';
+        }
         refitVisibleRoute();
       });
     }
