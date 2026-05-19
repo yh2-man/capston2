@@ -78,7 +78,12 @@ body {
 .route-panel {
   top: var(--route-panel-top, 150px);
   bottom: auto;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
   z-index: 44;
+  width: fit-content;
+  max-width: calc(100vw - 28px);
   max-height: calc(100vh - var(--route-panel-top, 150px) - 20px);
   overflow: hidden;
   border-radius: 12px;
