@@ -1929,7 +1929,7 @@
 
     // 헤더만 먼저 렌더 — 구간 토글 시 steps div를 동적 추가/제거
     panel.innerHTML = [
-      '<div class="panel-row panel-row-start">',
+      '<div class="panel-row">',
       `<span class="panel-icon">${escapeHtml(routeMode === 'car' ? '차' : routeMode === 'walk' ? '도보' : '교통')}</span>`,
       '<div class="panel-info">',
       `<strong>${escapeHtml(destName || '')}</strong>`,
