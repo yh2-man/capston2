@@ -28,7 +28,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: source, imageQuality: 70, maxWidth: 1080);
+    final picked = await picker.pickImage(source: source, imageQuality: 70, maxWidth: 1080, requestFullMetadata: false);
     if (picked != null) setState(() => _selectedImage = File(picked.path));
   }
 
