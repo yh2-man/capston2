@@ -1860,6 +1860,7 @@
       steps && steps.length
         ? '<button class="panel-close" data-role="toggle">경로</button>'
         : '',
+      '<button class="panel-close-x" data-role="close" aria-label="닫기">×</button>',
       '</div>',
     ].join('');
 
@@ -1895,6 +1896,14 @@
         refitVisibleRoute();
       });
     }
+
+    const closeButton = panel.querySelector('[data-role="close"]');
+    if (closeButton) {
+      closeButton.addEventListener('click', function () {
+        clearRoute();
+        removePanel('route-panel');
+      });
+    }
   }
 
   function showTransitRoutePanel(route, destName) {
@@ -1927,6 +1936,7 @@
         : `<span>${escapeHtml(routeLabel)} ${escapeHtml(totalTime)} · 거리 ${escapeHtml(totalDistance)}</span>`,
       '</div>',
       '<button class="panel-close" data-role="toggle">구간</button>',
+      '<button class="panel-close-x" data-role="close" aria-label="닫기">×</button>',
       '</div>',
       '<div id="route-steps" class="route-steps transit-steps" style="display:none;">',
     ].join('');
@@ -1949,6 +1959,14 @@
         stepElement.style.display = hidden ? 'block' : 'none';
         toggleButton.textContent = hidden ? '접기' : '구간';
         refitVisibleRoute();
+      });
+    }
+
+    const closeButton = panel.querySelector('[data-role="close"]');
+    if (closeButton) {
+      closeButton.addEventListener('click', function () {
+        clearRoute();
+        removePanel('route-panel');
       });
     }
   }
