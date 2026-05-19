@@ -78,12 +78,9 @@ body {
 .route-panel {
   top: var(--route-panel-top, 150px);
   bottom: auto;
-  left: 50%;
-  right: auto;
-  transform: translateX(-50%);
+  /* 가로는 검색창과 동일하게 화면 좌우 14px 마진 고정 */
+  /* 높이는 내용에 따라 자동 조절 */
   z-index: 44;
-  width: fit-content;
-  max-width: calc(100vw - 28px);
   max-height: calc(100vh - var(--route-panel-top, 150px) - 20px);
   overflow: hidden;
   border-radius: 12px;
