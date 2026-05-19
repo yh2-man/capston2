@@ -799,9 +799,11 @@ $app
 
   Widget _buildZoomControls(SeasonColors colors) {
     final double screenWidth = MediaQuery.sizeOf(context).width;
+    final double screenHeight = MediaQuery.sizeOf(context).height;
 
     return Positioned(
-      top: _topOverlayStart(context),
+      // 경로 패널과 겹치지 않도록 화면 수직 중앙 부근으로 배치
+      top: screenHeight * 0.35,
       right: screenWidth < 380 ? 12 : 16,
       child: SafeArea(
         child: Column(
