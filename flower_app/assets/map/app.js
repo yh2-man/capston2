@@ -232,40 +232,22 @@
   async function loadFlowers() {
     const apiFlowers = await fetchFlowersFromApi();
     state.flowers = apiFlowers;
-    console.log('[FlowerMap] loadFlowers: received', apiFlowers.length, 'flowers');
-    if (apiFlowers.length > 0) {
-      console.log('[FlowerMap] first flower:', JSON.stringify(apiFlowers[0]));
-    }
     applyFilters();
   }
 
   async function fetchFlowersFromApi() {
     const baseUrl = config.API_BASE_URL;
-    console.log('[FlowerMap] fetchFlowersFromApi baseUrl=', baseUrl);
-    if (!baseUrl) {
-      console.warn('[FlowerMap] API_BASE_URL is empty');
-      return [];
-    }
+    if (!baseUrl) return [];
 
-    const url = `${baseUrl}/flower-spots`;
-    console.log('[FlowerMap] fetching:', url);
     try {
-      const response = await fetch(url);
-      console.log('[FlowerMap] response status:', response.status);
-      if (!response.ok) {
-        console.warn('[FlowerMap] response not ok:', response.status);
-        return [];
-      }
-      const text = await response.text();
-      console.log('[FlowerMap] response body length:', text.length);
-      const body = JSON.parse(text);
+      // 지도 전체 뷰: 위치 필터 없이 최근 게시글 전부 표시
+      const response = await fetch(`${baseUrl}/flower-spots`);
+      if (!response.ok) return [];
+      const body = await response.json();
       const posts = body.data?.posts ?? (Array.isArray(body) ? body : []);
-      console.log('[FlowerMap] parsed posts count:', posts.length);
-      const normalized = normalizeFlowers(posts);
-      console.log('[FlowerMap] after normalize:', normalized.length);
-      return normalized;
+      return normalizeFlowers(posts);
     } catch (error) {
-      console.warn('Flower API is unavailable.', String(error));
+      console.warn('Flower API is unavailable.', error);
       return [];
     }
   }
@@ -273,13 +255,15 @@
   function normalizeFlowers(flowers) {
     return flowers
       .map(function (flower) {
-        const lat = flower.location?.lat ?? flower.lat ?? flower.mapY;
-        const lng = flower.location?.lng ?? flower.lng ?? flower.mapX;
+        // 백엔드 응답 필드는 latitude/longitude — 그 외 클라이언트 호환 키도 보존
+        const lat = flower.latitude ?? flower.location?.lat ?? flower.lat ?? flower.mapY;
+        const lng = flower.longitude ?? flower.location?.lng ?? flower.lng ?? flower.mapX;
         return {
-          flower_id: flower.flower_id ?? flower.flowerId ?? flower.id,
-          name: flower.name || '',
-          species: flower.species || '',
+          flower_id: flower.id ?? flower.flower_id ?? flower.flowerId,
+          name: flower.plantName || flower.name || flower.nickname || '',
+          species: flower.flowerSpecies || flower.species || '',
           address: flower.address || '',
+          imageUrl: flower.imageUrl || '',
           location: { lat: Number(lat), lng: Number(lng) },
           distance_m: flower.distance_m ?? flower.distanceM,
         };
@@ -660,17 +644,12 @@
   }
 
   function renderMapMarkers() {
-    if (!state.map || !window.kakao?.maps) {
-      console.warn('[FlowerMap] renderMapMarkers skipped: map=', !!state.map, 'kakao=', !!window.kakao?.maps);
-      return;
-    }
+    if (!state.map || !window.kakao?.maps) return;
     clearKakaoMarkers();
 
     const items = state.filteredMapItems.length || state.search
       ? state.filteredMapItems
       : buildVisibleMapItems();
-    console.log('[FlowerMap] renderMapMarkers:', items.length, 'items (flowers:',
-      state.filteredFlowers.length, 'showFlowers:', state.showFlowers, ')');
     const groups = clusterMapItems(items);
 
     groups.forEach(function (group) {
