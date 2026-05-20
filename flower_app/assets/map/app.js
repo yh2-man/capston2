@@ -14,6 +14,8 @@
     currentAccuracy: null,
     radius: config.DEFAULT_RADIUS || 5000,
     search: '',
+    searchFilter: 'all',
+    showRecentSearches: false,
     kakaoReady: false,
     mapError: null,
     markers: [],
@@ -33,6 +35,7 @@
     showTouristSpots: true,
     mapInteractionBound: false,
     suppressMapDismissUntil: 0,
+    savedPlaceKeys: new Set(),
   };
 
   const FLOWER_KEYWORDS = [
@@ -155,6 +158,9 @@
     window.FlowerMap = {
       setSearchQuery(query) {
         state.search = String(query || '').trim();
+        state.searchFilter = 'all';
+        state.showRecentSearches = !state.search;
+        rememberSearchQuery(state.search);
         applyFilters();
       },
       zoomIn() {
@@ -248,6 +254,16 @@
       },
       startRouteToFlowerById(flowerId, mode) {
         startRouteToFlowerById(flowerId, mode);
+      },
+      setSavedPlaceKeys(keys) {
+        const list = Array.isArray(keys) ? keys : [];
+        state.savedPlaceKeys = new Set(list.map(function (key) {
+          return String(key || '');
+        }));
+        refreshSaveButtons();
+      },
+      focusSavedPlace(place) {
+        focusSavedPlace(place);
       },
     };
   }
@@ -357,35 +373,51 @@
     if (!tourKey) return;
 
     try {
-      const center = state.currentPosition ||
-        config.DEFAULT_CENTER ||
-        DEFAULT_FALLBACK_POSITION;
-      const params = new URLSearchParams({
-        serviceKey: tourKey,
-        numOfRows: '80',
-        pageNo: '1',
-        MobileOS: 'ETC',
-        MobileApp: 'FlowerApp',
-        _type: 'json',
-        mapX: center.lng,
-        mapY: center.lat,
-        radius: state.radius,
-        arrange: 'E',
-        contentTypeId: '12',
-      });
+      const merged = [];
+      const keywords = TOURIST_SPOT_KEYWORDS
+        .filter(function (keyword) {
+          return !/^[a-z]+$/i.test(String(keyword));
+        })
+        .slice(0, 12);
 
-      const response = await fetch(
-        `https://apis.data.go.kr/B551011/KorService2/locationBasedList2?${params.toString()}`,
-      );
-      if (!response.ok) return;
-      const data = await response.json();
-      const items = data?.response?.body?.items?.item;
-      const itemList = Array.isArray(items) ? items : items ? [items] : [];
-      state.touristSpots = normalizeTouristSpotList(itemList);
+      for (const keyword of keywords) {
+        if (merged.length >= 300) break;
+        const params = new URLSearchParams({
+          serviceKey: tourKey,
+          numOfRows: '35',
+          pageNo: '1',
+          MobileOS: 'ETC',
+          MobileApp: 'FlowerApp',
+          _type: 'json',
+          keyword: keyword,
+          arrange: 'A',
+          contentTypeId: '12',
+        });
+
+        const response = await fetch(
+          `https://apis.data.go.kr/B551011/KorService2/searchKeyword2?${params.toString()}`,
+        );
+        if (!response.ok) continue;
+        const data = await response.json();
+        const items = data?.response?.body?.items?.item;
+        const itemList = Array.isArray(items) ? items : items ? [items] : [];
+        merged.push(...itemList);
+      }
+
+      state.touristSpots = normalizeTouristSpotList(dedupeByContentId(merged)).slice(0, 300);
       applyFilters();
     } catch (error) {
       console.warn('Tourist spot API is unavailable.', error);
     }
+  }
+
+  function dedupeByContentId(items) {
+    const map = new Map();
+    (items || []).forEach(function (item) {
+      const key = item.contentid || item.contentId || `${item.title}_${item.mapx}_${item.mapy}`;
+      if (!map.has(key)) map.set(key, item);
+    });
+    return Array.from(map.values());
   }
 
   function normalizeFestivalList(list) {
@@ -558,12 +590,14 @@
 
     state.filteredMapItems = buildVisibleMapItems().filter(function (item) {
       if (!query) return true;
+      if (state.searchFilter !== 'all' && item.type !== state.searchFilter) return false;
       return `${item.name} ${item.kindLabel} ${item.address} ${item.period || ''}`
         .toLowerCase()
         .includes(query);
     });
 
     renderMap();
+    renderSearchResultsPanel();
     applyPendingFlowerFocus();
     applyPendingRouteAction();
   }
@@ -583,6 +617,7 @@
           lng: flower.location.lng,
           isFestival: false,
           source: flower,
+          imageUrl: flower.imageUrl || '',
         });
       });
     }
@@ -620,6 +655,7 @@
           isFestival: false,
           isTourist: true,
           imageUrl: spot.imageUrl || '',
+          period: spot.period || '',
           source: spot,
         });
       });
@@ -726,6 +762,138 @@
       state.festivalMarkers.push(marker);
     } else {
       state.markers.push(marker);
+    }
+  }
+
+  function renderSearchResultsPanel() {
+    removePanel('search-results');
+    const shell = $('#map-shell');
+    if (!shell) return;
+
+    const query = state.search.trim();
+    if (!query) {
+      if (state.showRecentSearches) renderRecentSearchPanel();
+      return;
+    }
+
+    const results = state.filteredMapItems.slice(0, 30);
+    const panel = document.createElement('section');
+    panel.id = 'search-results';
+    panel.className = 'map-panel search-results-panel';
+    panel.innerHTML = [
+      '<div class="search-results-header">',
+      `<strong>${escapeHtml(query)}</strong>`,
+      `<span>${results.length}개 결과</span>`,
+      '<button type="button" data-role="clear" aria-label="검색 지우기">×</button>',
+      '</div>',
+      '<div class="search-filter-row">',
+      buildSearchFilterButton('all', '전체'),
+      buildSearchFilterButton('flower', '꽃 스팟'),
+      buildSearchFilterButton('festival', '축제'),
+      buildSearchFilterButton('tourist', '관광지'),
+      '</div>',
+      results.length
+        ? `<div class="search-result-list">${results.map(buildSearchResultHtml).join('')}</div>`
+        : '<div class="search-empty">검색 결과가 없습니다.</div>',
+    ].join('');
+
+    shell.appendChild(panel);
+    panel.querySelector('[data-role="clear"]').addEventListener('click', function () {
+      state.search = '';
+      state.showRecentSearches = true;
+      applyFilters();
+    });
+    panel.querySelectorAll('.search-result-item').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const item = results[Number(button.dataset.index)];
+        if (item) {
+          rememberSearchQuery(query);
+          showMarkerInfo(item);
+          panel.classList.add('collapsed');
+        }
+      });
+    });
+    panel.querySelectorAll('[data-filter]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        state.searchFilter = button.dataset.filter || 'all';
+        applyFilters();
+      });
+    });
+  }
+
+  function renderRecentSearchPanel() {
+    const recent = getRecentSearches();
+    if (!recent.length) return;
+    const shell = $('#map-shell');
+    if (!shell) return;
+    const panel = document.createElement('section');
+    panel.id = 'search-results';
+    panel.className = 'map-panel search-results-panel recent';
+    panel.innerHTML = [
+      '<div class="search-results-header">',
+      '<strong>최근 검색어</strong>',
+      '<span></span>',
+      '<button type="button" data-role="close" aria-label="닫기">×</button>',
+      '</div>',
+      `<div class="recent-search-list">${recent.map(function (query, index) {
+        return `<button type="button" class="recent-search-item" data-index="${index}">${escapeHtml(query)}</button>`;
+      }).join('')}</div>`,
+    ].join('');
+    shell.appendChild(panel);
+    panel.querySelector('[data-role="close"]').addEventListener('click', function () {
+      panel.remove();
+    });
+    panel.querySelectorAll('.recent-search-item').forEach(function (button) {
+      button.addEventListener('click', function () {
+        state.search = recent[Number(button.dataset.index)] || '';
+        state.showRecentSearches = false;
+        applyFilters();
+      });
+    });
+  }
+
+  function buildSearchFilterButton(type, label) {
+    const selected = state.searchFilter === type ? ' class="selected"' : '';
+    return `<button type="button" data-filter="${escapeAttribute(type)}"${selected}>${escapeHtml(label)}</button>`;
+  }
+
+  function buildSearchResultHtml(item, index) {
+    const distance = state.currentPosition
+      ? formatDistance(distanceMeters(state.currentPosition.lat, state.currentPosition.lng, item.lat, item.lng))
+      : '';
+    const image = item.imageUrl
+      ? `<img src="${escapeAttribute(item.imageUrl)}" alt="">`
+      : `<span>${escapeHtml(item.type === 'festival' ? '축제' : item.type === 'tourist' ? '관광' : '꽃')}</span>`;
+    return [
+      `<button type="button" class="search-result-item" data-index="${index}">`,
+      `<span class="search-result-thumb">${image}</span>`,
+      '<span class="search-result-copy">',
+      `<strong>${escapeHtml(item.name || '')}</strong>`,
+      `<small>${escapeHtml([item.kindLabel, item.address, distance].filter(Boolean).join(' · '))}</small>`,
+      '</span>',
+      '</button>',
+    ].join('');
+  }
+
+  function rememberSearchQuery(query) {
+    const text = String(query || '').trim();
+    if (!text) return;
+    try {
+      const recent = getRecentSearches().filter(function (entry) {
+        return entry !== text;
+      });
+      recent.unshift(text);
+      localStorage.setItem('ourtRecentMapSearches', JSON.stringify(recent.slice(0, 10)));
+    } catch (_) {}
+  }
+
+  function getRecentSearches() {
+    try {
+      const raw = localStorage.getItem('ourtRecentMapSearches') || '[]';
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.filter(Boolean).slice(0, 10) : [];
+    } catch (_) {
+      return [];
     }
   }
 
@@ -1114,6 +1282,7 @@
     panel.className = 'map-panel marker-panel marker-panel-floating';
 
     const meta = [item.period, item.address].filter(Boolean).join(' · ');
+    const saved = isItemSaved(item);
     panel.innerHTML = [
       '<div class="panel-info">',
       `<strong>${escapeHtml(item.name || '')}</strong>`,
@@ -1121,6 +1290,7 @@
       '</div>',
       '<div class="panel-actions">',
       '<button class="panel-action" data-role="navigate">길찾기</button>',
+      `<button class="panel-action save ${saved ? 'saved' : 'ghost'}" data-role="save">${saved ? '저장됨' : '저장'}</button>`,
       item.isFestival
         ? '<button class="panel-action ghost" data-role="detail">정보</button>'
         : item.isTourist
@@ -1130,6 +1300,20 @@
     ].join('');
 
     $('#map-shell').appendChild(panel);
+    const saveButton = panel.querySelector('[data-role="save"]');
+    if (saveButton) {
+      saveButton.dataset.saveKey = savedKeyForItem(item);
+      saveButton.dataset.itemJson = JSON.stringify({
+        id: item.id,
+        type: item.type,
+        name: item.name,
+        address: item.address,
+        lat: item.lat,
+        lng: item.lng,
+        imageUrl: item.imageUrl || '',
+        period: item.period || '',
+      });
+    }
     positionFloatingPanelAfterMapSettles(panel, item.lat, item.lng, {
       offsetY: 22,
       maxWidth: 260,
@@ -1138,6 +1322,10 @@
     panel.querySelector('[data-role="navigate"]').addEventListener('click', function () {
       panel.remove();
       showRouteModeChooser(item);
+    });
+
+    panel.querySelector('[data-role="save"]').addEventListener('click', function () {
+      toggleSavedPlace(item);
     });
 
     const detailButton = panel.querySelector('[data-role="detail"]');
@@ -1190,6 +1378,78 @@
         if (item) showMarkerInfo(item);
       });
     });
+  }
+
+  function localSavePayload(item) {
+    const sourceType = item.type === 'festival'
+      ? 'FESTIVAL'
+      : item.type === 'tourist'
+        ? 'TOURIST'
+        : 'FLOWER_SPOT';
+    const sourceId = item.id || `${item.lat},${item.lng}`;
+    return {
+      sourceType: sourceType,
+      sourceId: String(sourceId).replace(/^(festival|tourist|flower)-/, ''),
+      name: item.name || '',
+      address: item.address || '',
+      latitude: Number(item.lat || 0),
+      longitude: Number(item.lng || 0),
+      imageUrl: item.imageUrl || item.source?.imageUrl || '',
+      period: item.period || item.source?.period || '',
+    };
+  }
+
+  function savedKeyForPayload(payload) {
+    return `${payload.sourceType}:${payload.sourceId}`;
+  }
+
+  function savedKeyForItem(item) {
+    return savedKeyForPayload(localSavePayload(item));
+  }
+
+  function isItemSaved(item) {
+    return state.savedPlaceKeys.has(savedKeyForItem(item));
+  }
+
+  function toggleSavedPlace(item) {
+    const payload = localSavePayload(item);
+    const message = JSON.stringify({
+      type: 'toggle_saved_place',
+      payload: payload,
+    });
+    if (window.SaveMarker && typeof window.SaveMarker.postMessage === 'function') {
+      window.SaveMarker.postMessage(message);
+      return;
+    }
+
+    const key = savedKeyForPayload(payload);
+    if (state.savedPlaceKeys.has(key)) {
+      state.savedPlaceKeys.delete(key);
+    } else {
+      state.savedPlaceKeys.add(key);
+    }
+    refreshSaveButtons();
+  }
+
+  function refreshSaveButtons() {
+    document.querySelectorAll('[data-role="save"][data-save-key]').forEach(function (button) {
+      const saved = state.savedPlaceKeys.has(button.dataset.saveKey);
+      button.textContent = saved ? '저장됨' : '저장';
+      button.classList.toggle('saved', saved);
+      button.classList.toggle('ghost', !saved);
+    });
+
+    const markerPanel = document.getElementById('marker-info');
+    if (!markerPanel) return;
+    const saveButton = markerPanel.querySelector('[data-role="save"]');
+    if (!saveButton || !saveButton.dataset.itemJson) return;
+    try {
+      const item = JSON.parse(saveButton.dataset.itemJson);
+      const saved = isItemSaved(item);
+      saveButton.textContent = saved ? '저장됨' : '저장';
+      saveButton.classList.toggle('saved', saved);
+      saveButton.classList.toggle('ghost', !saved);
+    } catch (_) {}
   }
 
   function focusMapOnMarker(lat, lng, offsetY) {
@@ -1255,6 +1515,33 @@
     if (openPreview !== false) {
       showMarkerInfo(item);
     }
+    return true;
+  }
+
+  function focusSavedPlace(place) {
+    if (!place || !state.map || !window.kakao?.maps) return false;
+    const lat = Number(place.latitude ?? place.mapY ?? place.lat);
+    const lng = Number(place.longitude ?? place.mapX ?? place.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+    const sourceType = String(place.sourceType || 'PLACE');
+    const item = {
+      id: `${sourceType.toLowerCase()}-${place.sourceId || `${lat},${lng}`}`,
+      type: sourceType === 'FESTIVAL' ? 'festival' : sourceType === 'TOURIST' ? 'tourist' : 'flower',
+      kindLabel: sourceType === 'FESTIVAL' ? '축제' : sourceType === 'TOURIST' ? '관광지' : '꽃 스팟',
+      name: place.name || '장소',
+      address: place.address || '',
+      lat: lat,
+      lng: lng,
+      imageUrl: place.imageUrl || '',
+      period: place.period || '',
+      isFestival: sourceType === 'FESTIVAL',
+      isTourist: sourceType === 'TOURIST',
+      source: place,
+    };
+    markProgrammaticMove();
+    state.map.setLevel(Math.min(state.map.getLevel(), 3));
+    state.map.panTo(new kakao.maps.LatLng(lat, lng));
+    showMarkerInfo(item);
     return true;
   }
 
@@ -1364,6 +1651,7 @@
     const imageMarkup = enrichedFestival.imageUrl
       ? `<img src="${escapeAttribute(enrichedFestival.imageUrl)}" alt="${escapeAttribute(enrichedFestival.title || '축제 이미지')}">`
       : '<div class="detail-placeholder">꽃</div>';
+    const festivalPeriod = getFestivalPeriodText(enrichedFestival, festival);
 
     panel.innerHTML = [
       '<div class="detail-hero">', imageMarkup, '</div>',
@@ -1372,7 +1660,7 @@
       `<strong>${escapeHtml(enrichedFestival.title || '축제')}</strong>`,
       '<button class="detail-close" type="button" data-role="close" aria-label="닫기">×</button>',
       '</div>',
-      enrichedFestival.period ? `<p class="detail-meta">기간: ${escapeHtml(enrichedFestival.period)}</p>` : '',
+      festivalPeriod ? `<p class="detail-meta">축제 일정: ${escapeHtml(festivalPeriod)}</p>` : '',
       enrichedFestival.eventPlace ? `<p class="detail-body">장소: ${escapeHtml(enrichedFestival.eventPlace)}</p>` : '',
       enrichedFestival.address ? `<p class="detail-body">주소: ${escapeHtml(enrichedFestival.address)}</p>` : '',
       enrichedFestival.useTimeFestival ? `<p class="detail-body">이용안내: ${escapeHtml(enrichedFestival.useTimeFestival)}</p>` : '',
@@ -1380,7 +1668,7 @@
       enrichedFestival.homepage ? `<p class="detail-body">홈페이지: ${escapeHtml(stripHtml(enrichedFestival.homepage))}</p>` : '',
       enrichedFestival.tel ? `<p class="detail-body">문의: ${escapeHtml(enrichedFestival.tel)}</p>` : '',
       enrichedFestival.overview ? `<p class="detail-body">${escapeHtml(stripHtml(enrichedFestival.overview))}</p>` : '',
-      !enrichedFestival.period &&
+      !festivalPeriod &&
         !enrichedFestival.eventPlace &&
         !enrichedFestival.address &&
         !enrichedFestival.useTimeFestival &&
@@ -1451,6 +1739,14 @@
         imageUrl: normalizeImageUrl(common.imageUrl || festival.imageUrl || ''),
         address: common.address || festival.address || '',
         tel: common.tel || intro.sponsorTel || festival.tel || '',
+        period: festival.period ||
+          intro.period ||
+          formatPeriod(
+            festival.eventStartDate || festival.eventstartdate || intro.eventStartDate || '',
+            festival.eventEndDate || festival.eventenddate || intro.eventEndDate || '',
+          ),
+        eventStartDate: festival.eventStartDate || festival.eventstartdate || intro.eventStartDate || '',
+        eventEndDate: festival.eventEndDate || festival.eventenddate || intro.eventEndDate || '',
         homepage: common.homepage || '',
         overview: common.overview || '',
         eventPlace: intro.eventPlace || '',
@@ -1461,6 +1757,24 @@
       console.warn('축제 상세 정보를 가져오지 못했습니다.', error);
       return festival;
     }
+  }
+
+  function getFestivalPeriodText(enrichedFestival, originalFestival) {
+    const candidates = [
+      enrichedFestival?.period,
+      formatPeriod(
+        enrichedFestival?.eventStartDate || enrichedFestival?.eventstartdate || '',
+        enrichedFestival?.eventEndDate || enrichedFestival?.eventenddate || '',
+      ),
+      originalFestival?.period,
+      formatPeriod(
+        originalFestival?.eventStartDate || originalFestival?.eventstartdate || '',
+        originalFestival?.eventEndDate || originalFestival?.eventenddate || '',
+      ),
+    ];
+    return candidates.find(function (value) {
+      return String(value || '').trim();
+    }) || '';
   }
 
   function showTouristDetail(spot) {
@@ -1557,6 +1871,9 @@
     const item = normalizeDetailItem(data);
 
     return {
+      period: formatPeriod(item.eventstartdate || '', item.eventenddate || ''),
+      eventStartDate: item.eventstartdate || '',
+      eventEndDate: item.eventenddate || '',
       eventPlace: item.eventplace || '',
       playTime: item.playtime || '',
       useTimeFestival: item.usetimefestival || '',

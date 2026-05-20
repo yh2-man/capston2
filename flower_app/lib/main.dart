@@ -10,15 +10,19 @@ import 'package:http/http.dart' as http;
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
 import 'screens/profile_setup_screen.dart';
+import 'services/step_notification_service.dart';
 import 'theme/season_theme.dart';
 import 'api_config.dart';
 
-final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+final FlutterLocalNotificationsPlugin _localNotifications =
+    FlutterLocalNotificationsPlugin();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
-  try { await Firebase.initializeApp(); } catch (_) {}
+  try {
+    await Firebase.initializeApp();
+  } catch (_) {}
 
   final prefs = await SharedPreferences.getInstance();
   final String? token = prefs.getString('accessToken');
@@ -35,6 +39,7 @@ Future<void> main() async {
   }
 
   await _initLocalNotifications();
+  await StepNotificationService.initialize();
   await _initFcm(prefs);
   await _requestLocationPermission();
   if (hasToken) await _sendLocationToServer(prefs);
@@ -56,7 +61,9 @@ bool _isTokenExpired(String token) {
       debugPrint('[Auth] JWT exp 필드 없음');
       return true;
     }
-    return DateTime.fromMillisecondsSinceEpoch(exp * 1000).isBefore(DateTime.now());
+    return DateTime.fromMillisecondsSinceEpoch(
+      exp * 1000,
+    ).isBefore(DateTime.now());
   } catch (e) {
     debugPrint('[Auth] JWT 파싱 실패: $e');
     return true;
@@ -76,7 +83,9 @@ Future<void> _requestLocationPermission() async {
 
 Future<void> _initLocalNotifications() async {
   const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-  await _localNotifications.initialize(const InitializationSettings(android: android));
+  await _localNotifications.initialize(
+    const InitializationSettings(android: android),
+  );
 }
 
 Future<void> _initFcm(SharedPreferences prefs) async {
@@ -99,7 +108,8 @@ Future<void> _initFcm(SharedPreferences prefs) async {
         notification.body,
         const NotificationDetails(
           android: AndroidNotificationDetails(
-            'ourt_channel', 'OurT 알림',
+            'ourt_channel',
+            'OurT 알림',
             importance: Importance.high,
             priority: Priority.high,
           ),
@@ -119,11 +129,19 @@ Future<void> _sendLocationToServer(SharedPreferences prefs) async {
     );
     final token = prefs.getString('accessToken') ?? '';
     if (token.isEmpty) return;
-    await http.post(
-      Uri.parse('${ApiConfig.backendBaseUrl()}/api/v1/auth/location'),
-      headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
-      body: jsonEncode({'latitude': pos.latitude, 'longitude': pos.longitude}),
-    ).timeout(const Duration(seconds: 5));
+    await http
+        .post(
+          Uri.parse('${ApiConfig.backendBaseUrl()}/api/v1/auth/location'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'latitude': pos.latitude,
+            'longitude': pos.longitude,
+          }),
+        )
+        .timeout(const Duration(seconds: 5));
   } catch (_) {}
 }
 

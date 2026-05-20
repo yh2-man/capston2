@@ -10,6 +10,7 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import '../api_config.dart';
 import '../models/chat_action.dart';
+import '../services/local_saved_place_service.dart';
 import '../services/tour_api_service.dart';
 import '../theme/season_theme.dart';
 import '../utils/location_permission_helper.dart';
@@ -23,11 +24,13 @@ class KakaoMapScreen extends StatefulWidget {
     this.isEmbedded = false,
     this.initialActions,
     this.initialFestival,
+    this.initialSavedPlace,
   });
 
   final bool isEmbedded;
   final List<ChatAction>? initialActions;
   final FestivalData? initialFestival;
+  final LocalSavedPlace? initialSavedPlace;
 
   @override
   State<KakaoMapScreen> createState() => KakaoMapScreenState();
@@ -66,6 +69,9 @@ class KakaoMapScreenState extends State<KakaoMapScreen> {
     if (initialQuery != null) {
       _searchController.text = initialQuery;
     }
+    _searchController.addListener(() {
+      if (mounted) setState(() {});
+    });
     if (!kIsWeb) {
       _configureWebViewController();
     }
@@ -113,11 +119,18 @@ class KakaoMapScreenState extends State<KakaoMapScreen> {
             return NavigationDecision.navigate;
           },
         ),
+      )
+      ..addJavaScriptChannel(
+        'SaveMarker',
+        onMessageReceived: (JavaScriptMessage message) {
+          _handleSaveMarkerMessage(message.message);
+        },
       );
 
     if (_controller!.platform is AndroidWebViewController) {
-      (_controller!.platform as AndroidWebViewController)
-          .setMixedContentMode(MixedContentMode.alwaysAllow);
+      (_controller!.platform as AndroidWebViewController).setMixedContentMode(
+        MixedContentMode.alwaysAllow,
+      );
     }
 
     final PlatformWebViewWidgetCreationParams baseParams =
@@ -192,12 +205,8 @@ class KakaoMapScreenState extends State<KakaoMapScreen> {
 
   Future<void> _loadTouristSpotData() async {
     try {
-      final Position? position = _currentPosition;
       final List<TouristSpotData> spots = await _tourApiService
-          .getFlowerTouristSpots(
-            latitude: position?.latitude ?? _defaultCenterLat,
-            longitude: position?.longitude ?? _defaultCenterLng,
-          );
+          .getNationwideFlowerTouristSpots();
       if (!mounted) return;
       setState(() {
         _touristSpots = _sortTouristSpots(spots, _currentPosition);
@@ -362,6 +371,8 @@ $app
     await _syncFestivalDataToMap();
     await _syncTouristSpotDataToMap();
     await _syncCategoryState();
+    await _syncSavedPlacesToMap();
+    await _focusInitialSavedPlaceIfNeeded();
     await _focusInitialFestivalIfNeeded();
   }
 
@@ -440,6 +451,17 @@ $app
     );
   }
 
+  Future<void> _syncSavedPlacesToMap() async {
+    if (kIsWeb || _controller == null) return;
+    final Set<String> keys = await LocalSavedPlaceService.getSavedKeys();
+    final String payload = jsonEncode(keys.toList());
+    await _controller!.runJavaScript(
+      'if(window.FlowerMap && typeof window.FlowerMap.setSavedPlaceKeys === "function") {'
+      'window.FlowerMap.setSavedPlaceKeys($payload);'
+      '}',
+    );
+  }
+
   Future<void> _syncRoutePanelTop() async {
     if (kIsWeb || _controller == null || !mounted || _isLoading) return;
     final double routePanelTop = widget.isEmbedded
@@ -458,6 +480,46 @@ $app
   Future<void> _focusInitialFestivalIfNeeded() async {
     if (widget.initialFestival == null) return;
     await _focusFestival(widget.initialFestival!);
+  }
+
+  Future<void> _focusInitialSavedPlaceIfNeeded() async {
+    final LocalSavedPlace? place = widget.initialSavedPlace;
+    if (place == null || kIsWeb || _controller == null) return;
+    final String payload = jsonEncode(place.toJson());
+    await _controller!.runJavaScript(
+      'if(window.FlowerMap && typeof window.FlowerMap.focusSavedPlace === "function") {'
+      'window.FlowerMap.focusSavedPlace($payload);'
+      '}',
+    );
+  }
+
+  Future<void> _handleSaveMarkerMessage(String rawMessage) async {
+    try {
+      final Object? decoded = jsonDecode(rawMessage);
+      if (decoded is! Map<String, dynamic>) return;
+      if (decoded['type'] != 'toggle_saved_place') return;
+      final Object? payload = decoded['payload'];
+      if (payload is! Map<String, dynamic>) return;
+      final LocalSavedPlace place = LocalSavedPlace.fromMapPayload(payload);
+      final bool saved = await LocalSavedPlaceService.togglePlace(place);
+      await _syncSavedPlacesToMap();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(saved ? '저장됨에 추가했습니다' : '저장됨에서 삭제했습니다'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    } catch (error) {
+      debugPrint('[MapWebView] save marker failed: $error');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('저장 처리에 실패했습니다'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    }
   }
 
   Future<void> setSearchQuery(String query) async {
@@ -543,7 +605,10 @@ $app
           'if(window.FlowerMap) window.FlowerMap.resetToDefaultCenter();',
         );
       }
-      await _loadTouristSpotData();
+      setState(() {
+        _touristSpots = _sortTouristSpots(_touristSpots, _currentPosition);
+      });
+      await _syncTouristSpotDataToMap();
     } catch (error) {
       debugPrint('[GPS] Failed to move to current location: $error');
     }
@@ -826,14 +891,24 @@ $app
                     child: TextField(
                       controller: _searchController,
                       textInputAction: TextInputAction.search,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: '꽃 이름, 종류, 주소',
                         border: InputBorder.none,
                         isDense: true,
-                        contentPadding: EdgeInsets.symmetric(
+                        contentPadding: const EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 12,
                         ),
+                        suffixIcon: _searchController.text.isEmpty
+                            ? null
+                            : IconButton(
+                                icon: const Icon(Icons.close, size: 18),
+                                tooltip: '검색 지우기',
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setSearchQuery('');
+                                },
+                              ),
                       ),
                       onSubmitted: (String value) {
                         setSearchQuery(value.trim());
