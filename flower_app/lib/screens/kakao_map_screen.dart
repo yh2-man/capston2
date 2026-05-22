@@ -62,6 +62,8 @@ class KakaoMapScreenState extends State<KakaoMapScreen> {
   List<FestivalData> _festivals = <FestivalData>[];
   List<TouristSpotData> _touristSpots = <TouristSpotData>[];
 
+  bool get _hasActiveMapSearch => _searchController.text.trim().isNotEmpty;
+
   @override
   void initState() {
     super.initState();
@@ -830,12 +832,15 @@ $app
       body: Stack(
         children: <Widget>[
           Positioned.fill(child: _buildMapBody(colors)),
-          _buildFestivalOverlay(colors),
+          // 검색 결과는 WebView 안에서 리스트 패널로 뜨기 때문에 Flutter 오버레이를 숨겨 겹침을 막는다.
+          if (!_hasActiveMapSearch) _buildFestivalOverlay(colors),
           _buildTopBar(colors),
-          _buildZoomControls(colors),
+          if (!_hasActiveMapSearch) _buildZoomControls(colors),
         ],
       ),
-      floatingActionButton: const ChatFloatingButton(),
+      floatingActionButton: _hasActiveMapSearch
+          ? null
+          : const ChatFloatingButton(),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: const AppBottomNavigation(currentTab: AppNavTab.map),
     );
